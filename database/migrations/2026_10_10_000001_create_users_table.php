@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('username', 50)->unique();
             $table->string('email', 100)->unique();
             $table->string('password', 255);
-            $table->enum('role', ['owner_admin', 'kasir', 'petugas_produksi', 'petugas_packing', 'supplier']);
+               $table->enum('role', ['owner_admin', 'kasir', 'petugas_processing', 'supplier']);
             $table->string('no_hp', 20)->nullable();
             $table->boolean('status_aktif')->default(true);
             $table->timestamps();
