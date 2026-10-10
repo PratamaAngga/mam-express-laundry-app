@@ -36,5 +36,14 @@
     @case('weight')
         <circle cx="12" cy="5" r="3"/><path d="M6.5 8a2 2 0 0 0-1.905 1.46L2.1 18.5A2 2 0 0 0 4 21h16a2 2 0 0 0 1.925-2.54L19.4 9.5A2 2 0 0 0 17.5 8z"/>
         @break
+    @case('plus')
+        <path d="M5 12h14"/><path d="M12 5v14"/>
+        @break
+    @case('send')
+        <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+        @break
+    @case('message-circle')
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/>
+        @break
 @endswitch
 </svg>

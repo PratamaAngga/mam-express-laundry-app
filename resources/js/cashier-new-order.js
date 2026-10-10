@@ -12,7 +12,6 @@
     const weight = document.getElementById('weight');
     const fresh = document.getElementById('freshener');
 
-    // DATA CONTOH. Nanti diganti dengan fetch() ke endpoint pelanggan buatan backend.
     const dummyCustomers = {
         '085856170561': { name: 'Siti Rahma', meta: 'Customer since May 2026 • 12 orders' },
     };
@@ -25,6 +24,7 @@
         const d = digits(wa.value);
         const valid = /^(0|62)8\d{8,11}$/.test(d);
         waValid.hidden = !valid;
+        wa.classList.toggle('is-valid', valid);
         document.getElementById('wa-check').hidden = !valid;
         waValidNumber.textContent = formatPhone(d);
 
@@ -38,7 +38,7 @@
         } else {
             nameInput.readOnly = false;
             customerMeta.textContent = '';
-            waHint.textContent = d.length > 5 ? 'Nomor belum terdaftar. Isi nama atau klik + Pelanggan Baru.' : '';
+            waHint.textContent = d.length > 5 ? "The number is not registered. Enter a name or click + New Customer."' : '';
             waHint.className = 'hint';
         }
     }
@@ -63,7 +63,6 @@
         const time = eta.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace(':', '.');
         document.getElementById('sum-eta').textContent = date + ', ' + time;
 
-        // Tandai kartu yang dipilih
         form.querySelectorAll('.option').forEach(function (el) {
             el.classList.toggle('selected', el.querySelector('input').checked);
         });

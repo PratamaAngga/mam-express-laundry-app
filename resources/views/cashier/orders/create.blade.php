@@ -128,5 +128,5 @@
 @endsection
 
 @push('scripts')
-    <script src="{{ asset('js/cashier-new-order.js') }}"></script>
+    <script src="{{ asset('js/cashier-new-order.js') }}?v={{ filemtime(public_path('js/cashier-new-order.js')) }}"></script>
 @endpush
