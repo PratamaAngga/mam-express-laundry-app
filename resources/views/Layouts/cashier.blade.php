@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/cashier.css') }}?v={{ filemtime(public_path('css/cashier.css')) }}">
+    @stack('styles')
 </head>
 
 <body>
@@ -22,22 +23,25 @@
 
             <div class="location">
                 <span class="muted small">Location</span>
-                <strong>Candi panggung, Malang</strong>
+                <strong>Candi Panggung, Malang</strong>
             </div>
 
             <p class="nav-title">Cashier's counter</p>
             <nav class="nav">
                 <a href="{{ route('cashier.orders.create') }}"
-                    class="{{ request()->routeIs('cashier.orders.*') ? 'active' : '' }}">
+                    class="{{ request()->routeIs('cashier.orders.create', 'cashier.orders.success') ? 'active' : '' }}">
                     <x-icon name="plus-circle" /> New Order
                 </a>
-                <a href="#"><x-icon name="clipboard" /> Order List</a>
+                <a href="{{ route('cashier.orders.index') }}"
+                    class="{{ request()->routeIs('cashier.orders.index') ? 'active' : '' }}">
+                    <x-icon name="clipboard" /> Order List
+                </a>
                 <a href="#"><x-icon name="users" /> Customers</a>
                 <a href="#"><x-icon name="printer" /> Print Receipt</a>
             </nav>
 
             <div class="sidebar-bottom">
-                <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help center</a>
+                <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help Center</a>
                 <div class="user">
                     <span class="avatar">K</span>
                     <span class="user-info"><strong>Kartiko</strong><br><span class="muted small">Cashier</span></span>

@@ -23,7 +23,7 @@
         <section class="card">
             <div class="card-head">
                 <h2>Customer</h2>
-                <a href="#" class="link">+ Pelanggan Baru</a>
+                <a href="#" class="link">+ New Customers</a>
             </div>
 
             <label for="whatsapp">WhatsApp Number</label>
@@ -36,7 +36,7 @@
             @error('whatsapp') <p class="error">{{ $message }}</p> @enderror
 
             <label for="customer_name">Customer name</label>
-            <input type="text" id="customer_name" name="customer_name" placeholder="Nama pelanggan" value="{{ old('customer_name') }}">
+            <input type="text" id="customer_name" name="customer_name" placeholder="Customer Name" value="{{ old('customer_name') }}">
             <p id="customer-meta" class="muted small"></p>
             @error('customer_name') <p class="error">{{ $message }}</p> @enderror
         </section>
@@ -81,7 +81,7 @@
             </label>
 
             <label for="notes">Laundry notes (optional)</label>
-            <input type="text" id="notes" name="notes" placeholder="Contoh: pisahkan pakaian putih." value="{{ old('notes') }}">
+            <input type="text" id="notes" name="notes" placeholder="Example: Sort the white clothes." value="{{ old('notes') }}">
         </section>
     </div>
 

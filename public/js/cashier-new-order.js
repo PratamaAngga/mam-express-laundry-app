@@ -25,6 +25,8 @@
         const d = digits(wa.value);
         const valid = /^(0|62)8\d{8,11}$/.test(d);
         waValid.hidden = !valid;
+        wa.classList.toggle('is-valid', valid);
+        document.getElementById('wa-check').hidden = !valid;
         waValidNumber.textContent = formatPhone(d);
 
         const found = dummyCustomers[d];
@@ -37,7 +39,7 @@
         } else {
             nameInput.readOnly = false;
             customerMeta.textContent = '';
-            waHint.textContent = d.length > 5 ? 'Nomor belum terdaftar. Isi nama atau klik + Pelanggan Baru.' : '';
+            waHint.textContent = d.length > 5 ? 'Number not registered yet. Enter a name or click + New Customer.' : '';
             waHint.className = 'hint';
         }
     }

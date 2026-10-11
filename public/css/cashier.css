@@ -751,6 +751,7 @@ input[readonly] {
     }
 }
 
+/* ===== Penyesuaian dengan referensi ===== */
 input.is-valid {
     border-color: var(--primary);
 }
@@ -760,4 +761,221 @@ select {
     -webkit-appearance: none;
     padding-right: 40px;
     background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7f79' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center / 16px;
+}
+
+/* ===== Halaman Order List ===== */
+.sidebar-bottom .user {
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+}
+
+.btn-sm {
+    padding: 10px 16px;
+    font-size: 13px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 20px 0 16px;
+}
+
+.stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+}
+
+.stat strong {
+    font-size: 24px;
+    font-weight: 500;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.toolbar-right {
+    display: flex;
+    gap: 10px;
+}
+
+.search {
+    position: relative;
+    flex: 1;
+    max-width: 360px;
+}
+
+.search input[type="search"] {
+    width: 100%;
+    padding: 12px 14px 12px 40px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    font: inherit;
+    color: var(--ink);
+    background: #fff;
+}
+
+.search input[type="search"]:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+    border-color: var(--primary);
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+}
+
+.select-btn {
+    width: auto;
+    padding: 12px 40px 12px 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.date-btn {
+    padding: 12px 16px;
+}
+
+.table-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+
+.table th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    background: #eef4f2;
+    padding: 14px 20px;
+}
+
+.table td {
+    padding: 14px 20px;
+    border-top: 1px solid var(--line);
+    vertical-align: middle;
+}
+
+.table tbody tr:first-child td {
+    border-top: 0;
+}
+
+.table .code {
+    font-size: 12px;
+}
+
+.table .cell-sub {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+}
+
+.table .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 32px 20px;
+}
+
+.action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.action:hover {
+    text-decoration: underline;
+}
+
+.st {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.st-accepted {
+    background: #fdf0d8;
+    color: #9a6410;
+}
+
+.st-washed {
+    background: #e3edfb;
+    color: #2f5fa8;
+}
+
+.st-dried {
+    background: #efe6fa;
+    color: #6b3fa0;
+}
+
+.st-ready {
+    background: #dcf1e2;
+    color: #1e6b3a;
+}
+
+.st-done {
+    background: #e8f3ef;
+    color: #3f7a66;
+}
+
+.table-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pager button:disabled {
+    opacity: .55;
+    cursor: default;
+}
+
+.page-current {
+    background: var(--mint);
+    color: var(--primary-dark);
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+@media (max-width: 960px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
