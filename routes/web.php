@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\OrderController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Cashier\CustomerController;
 
 Route::get('/', function () {
     return redirect()->route('cashier.orders.create');
@@ -25,4 +26,6 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/success', [OrderController::class, 'success'])->name('orders.success');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
 });

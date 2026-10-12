@@ -36,7 +36,10 @@
                     class="{{ request()->routeIs('cashier.orders.index') ? 'active' : '' }}">
                     <x-icon name="clipboard" /> Order List
                 </a>
-                <a href="#"><x-icon name="users" /> Customers</a>
+                <a href="{{ route('cashier.customers.index') }}"
+                    class="{{ request()->routeIs('cashier.customers.*') ? 'active' : '' }}">
+                    <x-icon name="users" /> Customers
+                </a>
                 <a href="#"><x-icon name="printer" /> Print Receipt</a>
             </nav>
 
