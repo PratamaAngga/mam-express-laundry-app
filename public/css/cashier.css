@@ -727,6 +727,7 @@ input[readonly] {
     }
 }
 
+/* Cetak label: hanya kartu label yang tampil */
 @media print {
 
     .sidebar,
@@ -977,5 +978,89 @@ select {
 @media (max-width: 960px) {
     .stats {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ===== Halaman Customer ===== */
+.cust-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.cust-layout.is-open {
+    grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.cust-list .table {
+    min-width: 520px;
+}
+
+.list-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.side-panel {
+    padding: 24px;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.panel-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin: 0 0 4px;
+}
+
+.icon-btn {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+}
+
+.icon-btn:hover {
+    background: var(--bg);
+}
+
+.hint.err {
+    color: var(--danger);
+}
+
+input.is-invalid {
+    border-color: var(--danger);
+}
+
+.info-gap {
+    margin-top: 20px;
+}
+
+.panel-actions {
+    border-top: 1px solid var(--line);
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+.panel-actions .btn {
+    margin: 0 0 10px;
+}
+
+@media (max-width: 960px) {
+    .cust-layout.is-open {
+        grid-template-columns: 1fr;
     }
 }

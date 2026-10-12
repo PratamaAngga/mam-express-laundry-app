@@ -54,5 +54,8 @@
     @case('arrow-right')
         <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
         @break
+    @case('x')
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        @break
 @endswitch
 </svg>
