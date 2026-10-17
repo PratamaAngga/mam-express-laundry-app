@@ -142,7 +142,8 @@ class OrderController extends Controller
             'statuses' => Order::STATUS_LABELS,
             'counts' => [
                 'all' => count($orders),
-                'processing' => $count([Order::STATUS_QUEUED, Order::STATUS_PROCESSED]),
+                'queued' => $count([Order::STATUS_QUEUED]),
+                'processing' => $count([Order::STATUS_PROCESSED]),
                 'ready' => $count([Order::STATUS_PACKED]),
                 'done' => $count([Order::STATUS_DONE]),
             ],
