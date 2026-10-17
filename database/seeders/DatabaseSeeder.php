@@ -116,6 +116,7 @@ class DatabaseSeeder extends Seeder
             [$materials['Premium air freshener'], 20, 20000],
         ], 'Stock is running low, please make this a priority.');
 
+        $this->call(ServiceSeeder::class);
         $this->call(OrderSeeder::class);
     }
 
