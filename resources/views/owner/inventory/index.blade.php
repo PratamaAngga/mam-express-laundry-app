@@ -4,6 +4,14 @@
 @section('heading', 'Raw Material Inventory')
 @section('subheading', 'Monitor material availability to ensure operations continue without interruption.')
 
+@php
+    use App\Models\RawMaterial;
+    use Illuminate\Support\Facades\Route;
+
+    // The Restock page is built in another branch; until then the button points to '#'
+    $restockUrl = Route::has('owner.restock.index') ? route('owner.restock.index') : '#';
+@endphp
+
 @section('actions')
     <a href="#"
         class="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-5 py-3 text-sm font-semibold hover:bg-gray-50">
@@ -12,49 +20,50 @@
 @endsection
 
 @section('content')
-    {{-- Banner peringatan --}}
-    @if ($menipis->isNotEmpty())
+    {{-- Warning banner --}}
+    @if ($lowStock->isNotEmpty())
         <div class="mb-6 bg-amber-50 rounded-xl px-6 py-4 flex items-start gap-4">
             <i class="ti ti-alert-triangle text-2xl text-amber-700 mt-0.5"></i>
             <div>
-                <p class="font-semibold text-amber-800">{{ $menipis->count() }} items are below the minimum stock level</p>
+                <p class="font-semibold text-amber-800">{{ $lowStock->count() }}
+                    {{ $lowStock->count() > 1 ? 'items are' : 'item is' }} below the minimum stock level</p>
                 <p class="text-sm text-amber-800">
-                    {{ $menipis->pluck('nama')->map(fn($n) => ucfirst($n))->join(' and ') }}
-                    {{ $menipis->count() > 1 ? 'are' : 'is' }} running low. Please request a restock from the supplier
+                    {{ $lowStock->pluck('nama_bahan')->map(fn($n) => ucfirst($n))->join(' and ') }}
+                    {{ $lowStock->count() > 1 ? 'are' : 'is' }} running low. Please request a restock from the supplier
                     immediately.
                 </p>
             </div>
         </div>
     @endif
 
-    {{-- Kartu statistik --}}
+    {{-- Summary cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
         @php
             $cards = [
                 [
                     'label' => 'Listed ingredients',
-                    'value' => $ringkasan['total'],
+                    'value' => $summary['total'],
                     'note' => 'All operational materials',
                     'icon' => 'ti-package',
                     'tone' => 'text-teal-700',
                 ],
                 [
                     'label' => 'Sufficient stock',
-                    'value' => $ringkasan['aman'],
+                    'value' => $summary['sufficient'],
                     'note' => 'Above the minimum threshold',
                     'icon' => 'ti-circle-check',
                     'tone' => 'text-teal-700',
                 ],
                 [
                     'label' => 'Ingredients are running low',
-                    'value' => $ringkasan['menipis'],
+                    'value' => $summary['low'],
                     'note' => 'A restock request needs to be submitted',
                     'icon' => 'ti-alert-triangle',
                     'tone' => 'text-amber-600',
                 ],
                 [
                     'label' => 'Active requests',
-                    'value' => $ringkasan['permintaan_aktif'],
+                    'value' => $summary['active_requests'],
                     'note' => 'Waiting for confirmation from the supplier',
                     'icon' => 'ti-truck-delivery',
                     'tone' => 'text-teal-700',
@@ -73,7 +82,7 @@
         @endforeach
     </div>
 
-    {{-- Pencarian & filter --}}
+    {{-- Search & filter --}}
     <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div class="relative w-full max-w-md">
             <i class="ti ti-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
@@ -91,7 +100,7 @@
         </div>
     </div>
 
-    {{-- Tabel --}}
+    {{-- Table --}}
     <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-[#eef3f2] text-left text-gray-500">
@@ -105,23 +114,23 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100" id="stockBody">
-                @foreach ($bahan as $b)
-                    <tr data-name="{{ strtolower($b['nama']) }}" data-status="{{ $b['menipis'] ? 'low' : 'safe' }}">
-                        <td class="px-6 py-5">{{ $b['nama'] }}</td>
-                        <td class="px-6 py-5">{{ $b['stok'] }} {{ $b['satuan'] }}</td>
-                        <td class="px-6 py-5">{{ $b['minimum'] }} {{ $b['satuan'] }}</td>
-                        <td class="px-6 py-5">{{ $b['supplier'] }}</td>
+                @foreach ($materials as $m)
+                    <tr data-name="{{ strtolower($m->nama_bahan) }}" data-status="{{ $m->is_low ? 'low' : 'safe' }}">
+                        <td class="px-6 py-5">{{ $m->nama_bahan }}</td>
+                        <td class="px-6 py-5">{{ RawMaterial::formatNumber($m->stok_saat_ini) }} {{ $m->satuan }}</td>
+                        <td class="px-6 py-5">{{ RawMaterial::formatNumber($m->stok_minimum) }} {{ $m->satuan }}</td>
+                        <td class="px-6 py-5">{{ $m->supplier?->nama_supplier ?? '-' }}</td>
                         <td class="px-6 py-5">
-                            @if ($b['menipis'])
+                            @if ($m->is_low)
                                 <span class="px-3 py-1 rounded-full text-xs bg-amber-50 text-amber-700">Running low</span>
                             @else
                                 <span class="px-3 py-1 rounded-full text-xs bg-teal-50 text-teal-700">Safe</span>
                             @endif
                         </td>
-                        <td class="px-6 py-5">{{ $b['update'] }}</td>
+                        <td class="px-6 py-5">{{ $m->updated_label }}</td>
                     </tr>
                 @endforeach
-                <tr id="emptyRow" class="hidden">
+                <tr id="emptyRow" class="{{ $materials->isEmpty() ? '' : 'hidden' }}">
                     <td colspan="6" class="px-6 py-10 text-center text-gray-400">No ingredients found.</td>
                 </tr>
             </tbody>
@@ -129,26 +138,29 @@
     </div>
 
     <div class="flex flex-wrap items-center justify-between gap-3 mt-5">
-        <a href="{{ route('owner.restock.index') }}"
+        <a href="{{ $restockUrl }}"
             class="inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg px-5 py-3">
             <i class="ti ti-plus"></i> Request a Restock
         </a>
         <p class="text-sm text-gray-500">Inventory is updated once receipt of materials is confirmed.</p>
     </div>
 
-    {{-- Kartu bawah --}}
+    {{-- Bottom cards --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <div class="bg-white border border-gray-200 rounded-2xl p-6">
             <h2 class="text-xl">Latest usage</h2>
-            <p class="text-sm text-gray-500 mb-5">{{ now()->locale('en')->isoFormat('MMMM D, YYYY') }}</p>
-            <ul class="space-y-4 text-gray-500">
-                @foreach ($pemakaianTerbaru as $p)
-                    <li class="flex items-center justify-between">
-                        <span>{{ $p['nama'] }} · {{ $p['jam'] }}</span>
-                        <span class="text-[#12332d]">{{ $p['jumlah'] }}</span>
-                    </li>
-                @endforeach
-            </ul>
+            <p class="text-sm text-gray-500 mb-5">
+                {{ ($latestUsage->first()?->waktu ?? now())->locale('en')->isoFormat('MMMM D, YYYY') }}
+            </p>
+            @forelse ($latestUsage as $log)
+                <div class="flex items-center justify-between text-gray-500 {{ !$loop->last ? 'mb-4' : '' }}">
+                    <span>{{ $log->material->nama_bahan }} · {{ $log->waktu->format('H.i') }}</span>
+                    <span class="text-[#12332d]">-{{ RawMaterial::formatNumber($log->jumlah) }}
+                        {{ $log->material->satuan }}</span>
+                </div>
+            @empty
+                <p class="text-gray-400">No usage recorded yet.</p>
+            @endforelse
         </div>
 
         <div class="bg-white border border-gray-200 rounded-2xl p-6">
