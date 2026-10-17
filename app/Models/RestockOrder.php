@@ -24,6 +24,7 @@ class RestockOrder extends Model
     protected $fillable = [
         'kode_restock', 'id_supplier', 'id_user_owner', 'status', 'catatan',
         'perkiraan_kirim', 'catatan_konfirmasi',
+        'ekspedisi', 'nama_kurir', 'kontak_kurir', 'nomor_resi', 'estimasi_tiba', 'catatan_pengiriman',
         'tanggal_pengajuan', 'tanggal_dikonfirmasi', 'tanggal_dikirim', 'tanggal_diterima',
     ];
 
@@ -35,6 +36,7 @@ class RestockOrder extends Model
             'tanggal_dikonfirmasi' => 'datetime',
             'tanggal_dikirim'      => 'datetime',
             'tanggal_diterima'     => 'datetime',
+            'estimasi_tiba'        => 'datetime',
         ];
     }
 

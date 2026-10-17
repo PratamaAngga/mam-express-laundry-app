@@ -11,6 +11,7 @@ use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\ServicePricingController;
 use App\Http\Controllers\Supplier\RestockOrderController;
+use App\Http\Controllers\Supplier\ShipmentController;
 use App\Http\Controllers\Processing\ProcessingController;
 use Illuminate\Support\Facades\Route;
 
@@ -88,8 +89,13 @@ Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->na
 });
 
 Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    // Restock orders
     Route::get('/restock', [RestockOrderController::class, 'index'])->name('restock.index');
     Route::get('/restock/{order}', [RestockOrderController::class, 'show'])->name('restock.show');
     Route::patch('/restock/{order}/confirm', [RestockOrderController::class, 'confirm'])->name('restock.confirm');
-    Route::patch('/restock/{order}/ship', [RestockOrderController::class, 'ship'])->name('restock.ship');
+
+    // Shipments
+    Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
+    Route::get('/shipments/{order}', [ShipmentController::class, 'edit'])->name('shipments.edit');
+    Route::patch('/shipments/{order}', [ShipmentController::class, 'update'])->name('shipments.update');
 });

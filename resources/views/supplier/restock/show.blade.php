@@ -271,17 +271,17 @@
                         </dl>
 
                         @if ($order->status === 'dikonfirmasi')
-                            <form method="POST" action="{{ route('supplier.restock.ship', $order) }}" class="mt-5"
-                                onsubmit="return confirm('Mark order {{ $order->kode_restock }} as shipped?')">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit"
-                                    class="w-full bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-lg py-3.5 text-sm">
-                                    <i class="ti ti-truck-delivery"></i> Mark as Shipped
-                                </button>
-                                <p class="text-xs text-gray-500 mt-3">The status will change to Sent. The laundry records
-                                    the receipt once the items arrive.</p>
-                            </form>
+                            <a href="{{ route('supplier.shipments.edit', $order) }}"
+                                class="mt-5 block w-full text-center bg-teal-700 hover:bg-teal-800 text-white font-semibold rounded-lg py-3.5 text-sm">
+                                <i class="ti ti-truck-delivery"></i> Set Shipping
+                            </a>
+                            <p class="text-xs text-gray-500 mt-3">Fill in the courier and shipping reference, then mark the
+                                items as shipped.</p>
+                        @elseif (in_array($order->status, ['dikirim', 'diterima']))
+                            <a href="{{ route('supplier.shipments.edit', $order) }}"
+                                class="mt-5 block w-full text-center bg-white border border-gray-200 hover:bg-gray-50 font-semibold rounded-lg py-3.5 text-sm">
+                                <i class="ti ti-truck-delivery"></i> View Shipment
+                            </a>
                         @endif
                     @endif
                 </div>
