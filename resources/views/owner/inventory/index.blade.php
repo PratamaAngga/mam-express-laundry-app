@@ -8,8 +8,7 @@
     use App\Models\RawMaterial;
     use Illuminate\Support\Facades\Route;
 
-    // The Restock page is built in another branch; until then the button points to '#'
-    $restockUrl = Route::has('owner.restock.index') ? route('owner.restock.index') : '#';
+    $restockUrl = Route::has('owner.restock.create') ? route('owner.restock.create') : '#';
 @endphp
 
 @section('actions')
