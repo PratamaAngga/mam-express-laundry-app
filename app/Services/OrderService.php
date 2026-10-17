@@ -36,6 +36,12 @@ class OrderService
         return str_starts_with($digits, '0') ? $digits : '0' . $digits;
     }
 
+    // "085720000001" -> "0857 2000 0001" (hanya untuk tampilan)
+    public static function formatPhone(string $digits): string
+    {
+        return trim(preg_replace('/(\d{4})(?=\d)/', '$1 ', $digits));
+    }
+
     // Layanan tambahan pewangi. Kalau belum ada: jalankan `php artisan db:seed --class=ServiceSeeder`.
     public function freshener(): AdditionalService
     {
