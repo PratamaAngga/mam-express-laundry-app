@@ -5,6 +5,8 @@ use App\Http\Controllers\Cashier\OrderController;
 use App\Http\Controllers\Cashier\CustomerController;
 use App\Http\Controllers\Cashier\ReceiptController;
 use App\Http\Controllers\Owner\InventoryController;
+use App\Http\Controllers\Processing\ProcessingController;
+
 use Illuminate\Support\Facades\Route;
 
 
@@ -36,4 +38,11 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
+});
+
+Route::prefix('processing')->name('processing.')->group(function () {
+    Route::get('/', [ProcessingController::class, 'home'])->name('home');
+    Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
+    Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
+    Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
 });
