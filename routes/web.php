@@ -8,6 +8,7 @@ use App\Http\Controllers\Owner\EmployeeController;
 use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Owner\ReportController;
 
 Route::get('/', function () {
     return redirect()->route('cashier.orders.create');
@@ -38,6 +39,11 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
     Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
     Route::get('/restock/create', [RestockController::class, 'create'])->name('restock.create');
     Route::post('/restock', [RestockController::class, 'store'])->name('restock.store');
+
+    // Report
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/print', [ReportController::class, 'printView'])->name('reports.print');
 
     // Employee
     Route::get('/employees', [EmployeeController::class, 'index'])->name('employees.index');
