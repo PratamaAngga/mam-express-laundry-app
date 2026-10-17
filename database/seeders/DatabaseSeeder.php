@@ -54,8 +54,8 @@ class DatabaseSeeder extends Seeder
         }
 
         // Suppliers: each supplier = 1 row in `users` + 1 row in `supplier`
-        $aroma = $this->createSupplier('PT Aroma Bersih', 'aroma@mamexpress.test', '081188005500', 'Jl. Soekarno Hatta, Malang');
-        $kemasan = $this->createSupplier('CV Kemasan Jaya', 'kemasan@mamexpress.test', '081399004400', 'Jl. Raya Singosari, Malang');
+        $aroma = $this->createSupplier('PT Aroma Bersih', 'Nadia Ananda', 'aroma@mamexpress.test', '081188005500', 'Jl. Soekarno Hatta, Malang');
+        $kemasan = $this->createSupplier('CV Kemasan Jaya', 'Dimas Pratama', 'kemasan@mamexpress.test', '081399004400', 'Jl. Raya Singosari, Malang');
 
         // Raw materials: same as the Figma design
         $items = [
@@ -99,13 +99,13 @@ class DatabaseSeeder extends Seeder
             'waktu'    => '2026-10-09 09:00:00',
         ]);
 
-        // Restock orders: same as the Figma design (oldest first)
+        // Restock orders (oldest first). Quantities and prices match the Supplier page design.
         $this->createRestock('RST-260920-015', $aroma, $owner, 'diterima', '2026-09-20 09:00:00', [
-            [$materials['Pelembut pakaian'], 10, 35000],
+            [$materials['Pelembut pakaian'], 25, 14000],
         ]);
 
         $this->createRestock('RST-260928-016', $aroma, $owner, 'diterima', '2026-09-28 09:00:00', [
-            [$materials['Liquid detergent'], 36, 20000],
+            [$materials['Liquid detergent'], 30, 24000],
         ]);
 
         $this->createRestock('RST-261002-017', $kemasan, $owner, 'diterima', '2026-10-02 09:00:00', [
@@ -116,15 +116,23 @@ class DatabaseSeeder extends Seeder
             [$materials['Premium air freshener'], 20, 20000],
         ], 'Stock is running low, please make this a priority.');
 
+        $this->createRestock('RST-261009-019', $aroma, $owner, 'dikonfirmasi', '2026-10-09 11:00:00', [
+            [$materials['Premium air freshener'], 15, 20000],
+        ]);
+
+        $this->createRestock('RST-261009-020', $aroma, $owner, 'dikirim', '2026-10-09 11:10:00', [
+            [$materials['Premium air freshener'], 10, 20000],
+        ]);
+
         $this->call(ServiceSeeder::class);
         $this->call(OrderSeeder::class);
     }
 
-    private function createSupplier(string $name, string $email, string $phone, string $address): Supplier
+    private function createSupplier(string $companyName, string $contactName, string $email, string $phone, string $address): Supplier
     {
         $user = User::create([
-            'nama'         => $name,
-            'username'     => str($name)->slug()->toString(),
+            'nama'         => $contactName,
+            'username'     => str($contactName)->slug()->toString(),
             'email'        => $email,
             'no_hp'        => $phone,
             'role'         => 'supplier',
@@ -134,7 +142,7 @@ class DatabaseSeeder extends Seeder
 
         return Supplier::create([
             'id_user'       => $user->id_user,
-            'nama_supplier' => $name,
+            'nama_supplier' => $companyName,
             'no_whatsapp'   => $phone,
             'alamat'        => $address,
         ]);
@@ -162,6 +170,8 @@ class DatabaseSeeder extends Seeder
             'id_user_owner'        => $owner->id_user,
             'status'               => $status,
             'catatan'              => $note,
+            'perkiraan_kirim'      => $reached >= 1 ? $submitted->copy()->addDay()->setTime(8, 30) : null,
+            'catatan_konfirmasi'   => $reached >= 1 ? 'Available. Delivered by internal courier as scheduled.' : null,
             'tanggal_pengajuan'    => $submitted,
             'tanggal_dikonfirmasi' => $reached >= 1 ? $submitted->copy()->addDay() : null,
             'tanggal_dikirim'      => $reached >= 2 ? $submitted->copy()->addDays(2) : null,
