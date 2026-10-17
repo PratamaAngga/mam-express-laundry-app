@@ -115,6 +115,8 @@ class DatabaseSeeder extends Seeder
         $this->createRestock('RST-261009-018', $aroma, $owner, 'diajukan', '2026-10-09 10:30:00', [
             [$materials['Premium air freshener'], 20, 20000],
         ], 'Stock is running low, please make this a priority.');
+
+        $this->call(OrderSeeder::class);
     }
 
     private function createSupplier(string $name, string $email, string $phone, string $address): Supplier
