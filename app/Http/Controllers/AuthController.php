@@ -69,7 +69,7 @@ class AuthController extends Controller
             'nama'     => ['required', 'string', 'max:255'],
             'no_hp'    => ['required', 'string', 'max:20', 'unique:users,no_hp'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'role'     => ['required', 'in:kasir,petugas_produksi,petugas_packing,supplier'],
+            'role'     => ['required', 'in:kasir,petugas_processing,supplier'],
             'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
             'terms'    => ['accepted'],
         ]);
@@ -79,7 +79,7 @@ class AuthController extends Controller
             'username'     => Str::slug($validated['nama']) . '-' . random_int(100, 999),
             'email'        => $validated['email'],
             'no_hp'        => $validated['no_hp'],
-            'role'          => ['required', 'in:kasir,petugas_processing,supplier'],
+            'role'         => $validated['role'],
             'password'     => Hash::make($validated['password']),
             'status_aktif' => false,
         ]);

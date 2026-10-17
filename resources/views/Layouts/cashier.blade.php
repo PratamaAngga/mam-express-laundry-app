@@ -49,8 +49,8 @@
             <div class="sidebar-bottom">
                 <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help Center</a>
                 <div class="user">
-                    <span class="avatar">K</span>
-                    <span class="user-info"><strong>Kartiko</strong><br><span class="muted small">Cashier</span></span>
+                    <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
+                    <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span class="muted small">Cashier</span></span>
                     <a href="#" class="logout" aria-label="Log out"><x-icon name="log-out" :size="16" /></a>
                 </div>
             </div>
