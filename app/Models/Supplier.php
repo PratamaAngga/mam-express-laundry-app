@@ -23,4 +23,20 @@ class Supplier extends Model
     {
         return $this->hasMany(RawMaterial::class, 'id_supplier', 'id_supplier');
     }
+
+        /** "081288005500" -> "0812 8800 5500" */
+    public function getWhatsappLabelAttribute(): string
+    {
+        $digits = preg_replace('/\D/', '', $this->no_whatsapp);
+
+        return trim(chunk_split($digits, 4, ' '));
+    }
+
+    /** "0812..." -> "https://wa.me/62812..." */
+    public function getWhatsappUrlAttribute(): string
+    {
+        $digits = preg_replace('/\D/', '', $this->no_whatsapp);
+
+        return 'https://wa.me/' . preg_replace('/^0/', '62', $digits);
+    }
 }

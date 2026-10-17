@@ -3,12 +3,14 @@
 namespace Database\Seeders;
 
 use App\Models\RawMaterial;
+use App\Models\RestockDetail;
 use App\Models\RestockOrder;
 use App\Models\StockLog;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
@@ -31,20 +33,29 @@ class DatabaseSeeder extends Seeder
             'status_aktif' => true,
         ]);
 
-        // Suppliers: each supplier = 1 row in `users` + 1 row in `supplier`
-        $aroma = $this->createSupplier(
-            'PT Aroma Bersih',
-            'aroma@mamexpress.test',
-            '081211111111',
-            'Jl. Soekarno Hatta, Malang'
-        );
+        // Employees: same as the Employee page design (Lia is inactive)
+        $employees = [
+            ['Kartiko',        'kartiko@gmail.com',     '081300000001', 'kasir', true],
+            ['Rizky Saputra',  'rizky@mamexpress.test', '081300000002', 'kasir', true],
+            ['Sari Wulandari', 'sari@mamexpress.test',  '081300000003', 'kasir', true],
+            ['Lia Kartika',    'lia@mamexpress.test',   '081300000004', 'kasir', false],
+        ];
 
-        $kemasan = $this->createSupplier(
-            'CV Kemasan Jaya',
-            'kemasan@mamexpress.test',
-            '081222222222',
-            'Jl. Raya Singosari, Malang'
-        );
+        foreach ($employees as [$name, $email, $phone, $role, $active]) {
+            User::create([
+                'nama'         => $name,
+                'username'     => str($name)->slug()->toString(),
+                'email'        => $email,
+                'no_hp'        => $phone,
+                'role'         => $role,
+                'password'     => Hash::make('password123'),
+                'status_aktif' => $active,
+            ]);
+        }
+
+        // Suppliers: each supplier = 1 row in `users` + 1 row in `supplier`
+        $aroma = $this->createSupplier('PT Aroma Bersih', 'aroma@mamexpress.test', '081188005500', 'Jl. Soekarno Hatta, Malang');
+        $kemasan = $this->createSupplier('CV Kemasan Jaya', 'kemasan@mamexpress.test', '081399004400', 'Jl. Raya Singosari, Malang');
 
         // Raw materials: same as the Figma design
         $items = [
@@ -73,7 +84,7 @@ class DatabaseSeeder extends Seeder
             $materials[$name] = $material;
         }
 
-        // Latest usage (the "Latest usage" card)
+        // Latest usage (the "Latest usage" card on the inventory page)
         StockLog::create([
             'id_bahan' => $materials['Premium air freshener']->id_bahan,
             'tipe'     => 'keluar',
@@ -88,14 +99,24 @@ class DatabaseSeeder extends Seeder
             'waktu'    => '2026-10-09 09:00:00',
         ]);
 
-        // 1 restock request waiting for confirmation (the "Active requests" card)
-        RestockOrder::create([
-            'kode_restock'      => 'RS-0001',
-            'id_supplier'       => $kemasan->id_supplier,
-            'id_user_owner'     => $owner->id_user,
-            'status'            => 'diajukan',
-            'tanggal_pengajuan' => '2026-10-09 08:00:00',
+        // Restock orders: same as the Figma design (oldest first)
+        $this->createRestock('RST-260920-015', $aroma, $owner, 'diterima', '2026-09-20 09:00:00', [
+            [$materials['Pelembut pakaian'], 10, 35000],
         ]);
+
+        $this->createRestock('RST-260928-016', $aroma, $owner, 'diterima', '2026-09-28 09:00:00', [
+            [$materials['Liquid detergent'], 36, 20000],
+        ]);
+
+        $this->createRestock('RST-261002-017', $kemasan, $owner, 'diterima', '2026-10-02 09:00:00', [
+            [$materials['Plastic packaging'], 250, 1000],
+        ]);
+
+        $this->createRestock('RST-261009-018', $aroma, $owner, 'diajukan', '2026-10-09 10:30:00', [
+            [$materials['Premium air freshener'], 20, 20000],
+        ], 'Stock is running low, please make this a priority.');
+
+        $this->call(OrderSeeder::class);
     }
 
     private function createSupplier(string $name, string $email, string $phone, string $address): Supplier
@@ -116,5 +137,44 @@ class DatabaseSeeder extends Seeder
             'no_whatsapp'   => $phone,
             'alamat'        => $address,
         ]);
+    }
+
+    /**
+     * @param array<int, array{0: RawMaterial, 1: int|float, 2: int|float}> $lines [material, quantity, unit price]
+     */
+    private function createRestock(
+        string $code,
+        Supplier $supplier,
+        User $owner,
+        string $status,
+        string $submittedAt,
+        array $lines,
+        ?string $note = null,
+    ): void {
+        $flow = ['diajukan', 'dikonfirmasi', 'dikirim', 'diterima'];
+        $reached = array_search($status, $flow);
+        $submitted = Carbon::parse($submittedAt);
+
+        $order = RestockOrder::create([
+            'kode_restock'         => $code,
+            'id_supplier'          => $supplier->id_supplier,
+            'id_user_owner'        => $owner->id_user,
+            'status'               => $status,
+            'catatan'              => $note,
+            'tanggal_pengajuan'    => $submitted,
+            'tanggal_dikonfirmasi' => $reached >= 1 ? $submitted->copy()->addDay() : null,
+            'tanggal_dikirim'      => $reached >= 2 ? $submitted->copy()->addDays(2) : null,
+            'tanggal_diterima'     => $reached >= 3 ? $submitted->copy()->addDays(3) : null,
+        ]);
+
+        foreach ($lines as [$material, $quantity, $price]) {
+            RestockDetail::create([
+                'id_restock'   => $order->id_restock,
+                'id_bahan'     => $material->id_bahan,
+                'jumlah'       => $quantity,
+                'harga_satuan' => $price,
+                'status'       => $status,
+            ]);
+        }
     }
 }

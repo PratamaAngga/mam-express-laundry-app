@@ -33,7 +33,12 @@ $menu = [
         'label' => 'Restock Supplier',
         'match' => 'owner.restock.*',
     ],
-    ['href' => '#', 'icon' => 'ti-chart-bar', 'label' => 'Report', 'match' => 'owner.report.*'],
+    [
+        'href' => $link('owner.reports.index'),
+        'icon' => 'ti-chart-bar',
+        'label' => 'Report',
+        'match' => 'owner.reports.*',
+    ],
     [
         'href' => $link('owner.employees.index'),
         'icon' => 'ti-users',
