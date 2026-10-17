@@ -10,6 +10,7 @@ use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\ServicePricingController;
+use App\Http\Controllers\Supplier\RestockOrderController;
 use App\Http\Controllers\Processing\ProcessingController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,7 +32,7 @@ Route::middleware('auth')->group(function () {
             'owner_admin'        => redirect()->route('owner.dashboard'),
             'kasir'              => redirect()->route('cashier.orders.create'),
             'petugas_processing' => redirect()->route('processing.home'),
-            // supplier: halamannya belum dibuat
+            'supplier'           => redirect()->route('supplier.restock.index'),
             default              => abort(403, 'Halaman untuk role ini belum tersedia.'),
         };
     })->name('dashboard');
@@ -84,4 +85,11 @@ Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->na
     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
     Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
+});
+
+Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
+    Route::get('/restock', [RestockOrderController::class, 'index'])->name('restock.index');
+    Route::get('/restock/{order}', [RestockOrderController::class, 'show'])->name('restock.show');
+    Route::patch('/restock/{order}/confirm', [RestockOrderController::class, 'confirm'])->name('restock.confirm');
+    Route::patch('/restock/{order}/ship', [RestockOrderController::class, 'ship'])->name('restock.ship');
 });

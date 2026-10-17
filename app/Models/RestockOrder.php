@@ -23,12 +23,14 @@ class RestockOrder extends Model
 
     protected $fillable = [
         'kode_restock', 'id_supplier', 'id_user_owner', 'status', 'catatan',
+        'perkiraan_kirim', 'catatan_konfirmasi',
         'tanggal_pengajuan', 'tanggal_dikonfirmasi', 'tanggal_dikirim', 'tanggal_diterima',
     ];
 
     protected function casts(): array
     {
         return [
+            'perkiraan_kirim'      => 'datetime',
             'tanggal_pengajuan'    => 'datetime',
             'tanggal_dikonfirmasi' => 'datetime',
             'tanggal_dikirim'      => 'datetime',
@@ -62,7 +64,7 @@ class RestockOrder extends Model
     }
 
     /**
-     * The 4-step "Booking Process" timeline shown in the detail panel.
+     * The 4-step "Booking Process" timeline (used by the Owner restock page).
      */
     public function timeline(): array
     {
