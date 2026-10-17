@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\Service;
 use App\Services\OrderService;
 use Carbon\Carbon;
@@ -11,14 +12,6 @@ use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
-    private const STATUSES = [
-        'accepted' => 'Accepted',
-        'washed' => 'Washed',
-        'dried' => 'Dried',
-        'ready' => 'Ready for pickup',
-        'done' => 'Done',
-    ];
-
     // Daftar layanan aktif dari database (diatur owner di Service Pricing),
     // dibentuk sama seperti sebelumnya supaya view form tidak perlu diubah.
     private function serviceOptions(): array
@@ -79,14 +72,13 @@ class OrderController extends Controller
         $now = $saved->waktu_pesanan;
         $eta = $now->copy()->addDays($service->estimasi_hari);
         $kg = (float) $saved->berat_kg;
-        $digits = preg_replace('/\D/', '', $customer->no_telepon);
 
         // Metode bayar & catatan belum punya kolom di database, jadi hanya dibawa ke halaman sukses lewat session.
         $summary = [
             'code' => $saved->kode_pesanan,
             'cashier' => auth()->user()->nama,
             'customer_name' => $customer->nama,
-            'whatsapp' => trim(preg_replace('/(\d{4})(?=\d)/', '$1 ', $digits)),
+            'whatsapp' => OrderService::formatPhone($customer->no_telepon),
             'service_name' => $service->nama_layanan,
             'price_per_kg' => $service->harga_per_kg,
             'weight_label' => rtrim(rtrim(number_format($kg, 2, ',', ''), '0'), ','),
@@ -123,37 +115,38 @@ class OrderController extends Controller
         return view('cashier.orders.success', ['order' => $order]);
     }
 
-    // Halaman Order List
+    // Halaman Order List (data dari database, 100 pesanan terbaru)
     public function index()
     {
-        $orders = $this->sampleOrders();
-        $count = fn(array $keys) => count(array_filter($orders, fn($o) => in_array($o['status'], $keys, true)));
+        $orders = Order::with(['customer', 'service'])
+            ->orderByDesc('waktu_pesanan')
+            ->orderByDesc('id_pesanan')
+            ->limit(100)
+            ->get()
+            ->map(fn (Order $o) => [
+                'code' => $o->kode_pesanan,
+                'date' => $o->waktu_pesanan->format('j M Y'),
+                'time' => $o->waktu_pesanan->format('H.i'),
+                'name' => $o->customer->nama,
+                'phone' => OrderService::formatPhone($o->customer->no_telepon),
+                'weight' => Order::kg($o->berat_kg),
+                'service' => $o->service->nama_layanan,
+                'status' => $o->status,
+            ])
+            ->all();
+
+        $count = fn (array $keys) => count(array_filter($orders, fn ($o) => in_array($o['status'], $keys, true)));
 
         return view('cashier.orders.index', [
             'orders' => $orders,
-            'statuses' => self::STATUSES,
+            'statuses' => Order::STATUS_LABELS,
             'counts' => [
                 'all' => count($orders),
-                'processing' => $count(['accepted', 'washed', 'dried']),
-                'ready' => $count(['ready']),
-                'done' => $count(['done']),
+                'processing' => $count([Order::STATUS_QUEUED, Order::STATUS_PROCESSED]),
+                'ready' => $count([Order::STATUS_PACKED]),
+                'done' => $count([Order::STATUS_DONE]),
             ],
         ]);
-    }
-
-    // DATA Dummy untuk Order List
-    private function sampleOrders(): array
-    {
-        return [
-            ['code' => 'BNG-261009-0428', 'date' => '9 Oct 2026', 'time' => '10.42', 'name' => 'Siti Rahma', 'phone' => '0858 5617 0561', 'weight' => '4,5', 'service' => 'Laundry + Iron', 'status' => 'accepted'],
-            ['code' => 'BNG-261009-0427', 'date' => '9 Oct 2026', 'time' => '09.15', 'name' => 'Budi Santoso', 'phone' => '0813 7788 9900', 'weight' => '3', 'service' => 'Laundry + Iron', 'status' => 'washed'],
-            ['code' => 'BNG-261008-0426', 'date' => '8 Oct 2026', 'time' => '14.20', 'name' => 'Rina Amelia', 'phone' => '0857 2211 4400', 'weight' => '5', 'service' => 'Laundry + Iron', 'status' => 'dried'],
-            ['code' => 'BNG-261007-0425', 'date' => '7 Oct 2026', 'time' => '11.30', 'name' => 'Andi Pratama', 'phone' => '0821 6611 2200', 'weight' => '2', 'service' => 'Iron', 'status' => 'ready'],
-            ['code' => 'BNG-261006-0424', 'date' => '6 Oct 2026', 'time' => '10.10', 'name' => 'Dewi Lestari', 'phone' => '0812 8800 3311', 'weight' => '6', 'service' => 'Laundry + Iron', 'status' => 'done'],
-            ['code' => 'BNG-261005-0423', 'date' => '5 Oct 2026', 'time' => '15.45', 'name' => 'Agus Hidayat', 'phone' => '0819 5522 1100', 'weight' => '4', 'service' => 'Laundry + Iron', 'status' => 'ready'],
-            ['code' => 'BNG-261004-0422', 'date' => '4 Oct 2026', 'time' => '12.05', 'name' => 'Maya Putri', 'phone' => '0856 9900 2200', 'weight' => '3,5', 'service' => 'Laundry + Iron', 'status' => 'done'],
-            ['code' => 'BNG-261003-0421', 'date' => '3 Oct 2026', 'time' => '09.40', 'name' => 'Fajar Nugroho', 'phone' => '0822 4488 6600', 'weight' => '2', 'service' => 'Iron', 'status' => 'done'],
-        ];
     }
 
     // 10:42 a.m. / 3:05 p.m.
