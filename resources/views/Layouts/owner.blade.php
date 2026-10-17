@@ -46,7 +46,7 @@ $menu = [
         'match' => 'owner.employees.*',
     ],
     [
-        'href' => '#',
+        'href' => $link('owner.pricing.index'),
         'icon' => 'ti-adjustments-horizontal',
         'label' => 'Service Pricing',
         'match' => 'owner.pricing.*',

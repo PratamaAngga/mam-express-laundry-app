@@ -8,6 +8,7 @@ use App\Http\Controllers\Owner\EmployeeController;
 use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
+use App\Http\Controllers\Owner\ServicePricingController;
 use App\Http\Controllers\Processing\ProcessingController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,12 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
     Route::post('/employees', [EmployeeController::class, 'store'])->name('employees.store');
     Route::patch('/employees/{user}', [EmployeeController::class, 'update'])->name('employees.update');
     Route::patch('/employees/{user}/status', [EmployeeController::class, 'toggleStatus'])->name('employees.status');
+
+    // Service Pricing
+    Route::get('/pricing', [ServicePricingController::class, 'index'])->name('pricing.index');
+    Route::post('/pricing', [ServicePricingController::class, 'store'])->name('pricing.store');
+    Route::patch('/pricing/additional', [ServicePricingController::class, 'updateAdditional'])->name('pricing.additional');
+    Route::patch('/pricing/{service}', [ServicePricingController::class, 'update'])->name('pricing.update');
 });
 
 Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->group(function () {
