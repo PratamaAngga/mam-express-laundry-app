@@ -3,31 +3,29 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ReceiptController extends Controller
 {
-    private const FRESHENER_PRICE = 5000;
-
-    private const STATUSES = [
-        'accepted' => 'Accepted',
-        'washed' => 'Washed',
-        'dried' => 'Dried',
-        'ready' => 'Ready for pickup',
-        'done' => 'Done',
-    ];
-
-    // nama layanan, harga per kg, lama pengerjaan (hari)
-    private const SERVICES = [
-        'laundry_iron' => ['Laundry + Iron', 8000, 3],
-        'iron' => ['Iron', 6000, 2],
-    ];
-
-    // Halaman Print Receipt
+    // Halaman Print Receipt (data dari database, 50 pesanan terbaru)
     public function index(Request $request)
     {
-        $orders = $this->orders();
+        $orders = Order::with(['customer', 'service', 'additionalServices'])
+            ->orderByDesc('waktu_pesanan')
+            ->orderByDesc('id_pesanan')
+            ->limit(50)
+            ->get()
+            ->map(fn (Order $o) => $this->present($o))
+            ->all();
+
+        // Belum ada pesanan sama sekali: kembali ke form pesanan baru
+        if (empty($orders)) {
+            return redirect()->route('cashier.orders.create');
+        }
+
         $selected = collect($orders)->firstWhere('code', $request->query('order')) ?? $orders[0];
 
         return view('cashier.receipt.index', [
@@ -36,59 +34,47 @@ class ReceiptController extends Controller
         ]);
     }
 
-    // DATA DUMMY
-    private function orders(): array
+    // Bentuk data satu pesanan untuk halaman struk (kunci array sama seperti sebelumnya).
+    private function present(Order $o): array
     {
-        $rows = [
-            ['BNG-261009-0428', '2026-10-09 10:42', 'Siti Rahma', '0858 5617 0561', 4.5, 'laundry_iron', true, 'accepted', true],
-            ['BNG-261009-0427', '2026-10-09 09:15', 'Budi Santoso', '0813 7788 9900', 3, 'laundry_iron', false, 'washed', true],
-            ['BNG-261008-0426', '2026-10-08 14:20', 'Rina Amelia', '0857 2211 4400', 5, 'laundry_iron', false, 'dried', false],
-            ['BNG-261007-0425', '2026-10-07 11:30', 'Andi Pratama', '0821 6611 2200', 2, 'iron', false, 'ready', true],
-            ['BNG-261006-0424', '2026-10-06 10:10', 'Dewi Lestari', '0812 8800 3311', 6, 'laundry_iron', true, 'done', true],
-            ['BNG-261005-0423', '2026-10-05 15:45', 'Agus Hidayat', '0819 5522 1100', 4, 'laundry_iron', false, 'ready', false],
-            ['BNG-261004-0422', '2026-10-04 12:05', 'Maya Putri', '0856 9900 2200', 3.5, 'laundry_iron', false, 'done', true],
-            ['BNG-261003-0421', '2026-10-03 09:40', 'Fajar Nugroho', '0822 4488 6600', 2, 'iron', false, 'done', true],
+        $kg = (float) $o->berat_kg;
+        $addon = $o->additionalServices->first();
+        $freshenerTotal = $addon ? (int) round($addon->pivot->harga_saat_ini) : 0;
+        $total = (int) round($o->total_harga);
+        $serviceTotal = $total - $freshenerTotal;
+        $paid = $o->is_paid;
+        $paidAmount = $paid ? $total : 0;
+        $phone = OrderService::formatPhone($o->customer->no_telepon);
+        $placed = $o->waktu_pesanan;
+        $eta = $placed->copy()->addDays($o->service->estimasi_hari);
+        $kgLabel = Order::kg($kg);
+        $serviceName = $o->service->nama_layanan;
+
+        return [
+            'code' => $o->kode_pesanan,
+            'option_label' => $o->kode_pesanan . ' • ' . $o->customer->nama,
+            'name' => $o->customer->nama,
+            'phone' => $phone,
+            'date_short' => $placed->format('j M Y') . ', ' . $placed->format('H.i'),
+            'received' => 'Received ' . $placed->format('F j, Y') . ', ' . $this->time($placed),
+            'service_name' => $serviceName,
+            'calc' => $kgLabel . ' kg × ' . $this->rp((int) round($o->service->harga_per_kg)) . '/kg',
+            'service_total' => $this->rp($serviceTotal),
+            'freshener' => (bool) $addon,
+            'freshener_total' => $this->rp($freshenerTotal),
+            'total' => $this->rp($total),
+            'paid' => $paid,
+            'paid_label' => $paid ? 'paid off' : 'unpaid',
+            'paid_amount' => $this->rp($paidAmount),
+            'remaining' => $this->rp($total - $paidAmount),
+            'eta' => $eta->format('F j, Y') . ', ' . $this->time($eta),
+            'status_key' => $o->status,
+            'status_label' => Order::STATUS_LABELS[$o->status] ?? $o->status,
+            'weight_service' => $kgLabel . ' kg • ' . $serviceName,
+            'completed' => 'Completed: ' . $eta->format('M j, Y') . ', ' . $this->time($eta),
+            'sent_text' => 'To ' . $phone . ' on ' . $placed->format('F j') . ' at ' . $this->time($placed) . '.',
+            'qr' => $this->qrRects($o->kode_pesanan),
         ];
-
-        return array_map(function ($r) {
-            [$code, $at, $name, $phone, $kg, $serviceKey, $freshener, $status, $paid] = $r;
-            [$serviceName, $price, $days] = self::SERVICES[$serviceKey];
-
-            $placed = Carbon::parse($at);
-            $eta = $placed->copy()->addDays($days);
-
-            $serviceTotal = (int) round($kg * $price);
-            $freshenerTotal = $freshener ? self::FRESHENER_PRICE : 0;
-            $total = $serviceTotal + $freshenerTotal;
-            $paidAmount = $paid ? $total : 0;
-            $kgLabel = rtrim(rtrim(number_format($kg, 1, ',', ''), '0'), ',');
-
-            return [
-                'code' => $code,
-                'option_label' => $code . ' • ' . $name,
-                'name' => $name,
-                'phone' => $phone,
-                'date_short' => $placed->format('j M Y') . ', ' . $placed->format('H.i'),
-                'received' => 'Received ' . $placed->format('F j, Y') . ', ' . $this->time($placed),
-                'service_name' => $serviceName,
-                'calc' => $kgLabel . ' kg × ' . $this->rp($price) . '/kg',
-                'service_total' => $this->rp($serviceTotal),
-                'freshener' => $freshener,
-                'freshener_total' => $this->rp($freshenerTotal),
-                'total' => $this->rp($total),
-                'paid' => $paid,
-                'paid_label' => $paid ? 'paid off' : 'unpaid',
-                'paid_amount' => $this->rp($paidAmount),
-                'remaining' => $this->rp($total - $paidAmount),
-                'eta' => $eta->format('F j, Y') . ', ' . $this->time($eta),
-                'status_key' => $status,
-                'status_label' => self::STATUSES[$status],
-                'weight_service' => $kgLabel . ' kg • ' . $serviceName,
-                'completed' => 'Completed: ' . $eta->format('M j, Y') . ', ' . $this->time($eta),
-                'sent_text' => 'To ' . $phone . ' on ' . $placed->format('F j') . ' at ' . $this->time($placed) . '.',
-                'qr' => $this->qrRects($code),
-            ];
-        }, $rows);
     }
 
     private function rp(int $amount): string

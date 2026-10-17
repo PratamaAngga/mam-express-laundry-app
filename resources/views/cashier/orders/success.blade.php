@@ -48,7 +48,7 @@
                 <strong class="order-code">{{ $order['code'] }}</strong>
                 <span class="muted small">Posted by {{ $order['cashier'] }} &bull; {{ $order['posted_at'] }}</span>
             </div>
-            <span class="pill pill-amber">Accepted</span>
+            <span class="pill pill-amber">{{ \App\Models\Order::STATUS_LABELS[\App\Models\Order::STATUS_QUEUED] }}</span>
         </div>
     </div>
 
@@ -141,7 +141,7 @@
                 <div class="label-card">
                     <div class="label-head">
                         <strong>Mam Express</strong>
-                        <span class="pill pill-amber">Accepted</span>
+                        <span class="pill pill-amber">{{ \App\Models\Order::STATUS_LABELS[\App\Models\Order::STATUS_QUEUED] }}</span>
                     </div>
                     <div class="label-body">
                         <svg class="qr" viewBox="0 0 {{ $n }} {{ $n }}" shape-rendering="crispEdges" role="img"
