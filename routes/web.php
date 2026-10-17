@@ -4,7 +4,9 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\OrderController;
 use App\Http\Controllers\Cashier\CustomerController;
 use App\Http\Controllers\Cashier\ReceiptController;
+use App\Http\Controllers\Owner\InventoryController;
 use Illuminate\Support\Facades\Route;
+
 
 Route::get('/', function () {
     return redirect()->route('cashier.orders.create');
@@ -20,6 +22,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     // Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
+
+Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')->group(function () {
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 });
 
 Route::prefix('cashier')->name('cashier.')->group(function () {
