@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Models\Service;
+use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
 {
-    private const FRESHENER_PRICE = 5000;
-
     private const STATUSES = [
         'accepted' => 'Accepted',
         'washed' => 'Washed',
@@ -19,66 +19,83 @@ class OrderController extends Controller
         'done' => 'Done',
     ];
 
-    // Data layanan d
-    private function services(): array
+    // Daftar layanan aktif dari database (diatur owner di Service Pricing),
+    // dibentuk sama seperti sebelumnya supaya view form tidak perlu diubah.
+    private function serviceOptions(): array
     {
-        return [
-            ['code' => 'laundry_iron', 'name' => 'Laundry + Iron', 'price' => 8000, 'days' => 3],
-            ['code' => 'iron', 'name' => 'Iron', 'price' => 6000, 'days' => 2],
-        ];
+        return Service::active()
+            ->orderBy('id_layanan')
+            ->get()
+            ->map(fn (Service $s) => [
+                'code'  => (string) $s->id_layanan,
+                'name'  => $s->nama_layanan,
+                'price' => $s->harga_per_kg,
+                'days'  => $s->estimasi_hari,
+            ])
+            ->all();
     }
 
     // Halaman New Order
-    public function create()
+    public function create(OrderService $orders)
     {
+        $services = $this->serviceOptions();
+        abort_if(empty($services), 503, 'Belum ada layanan aktif. Aktifkan layanan di menu Service Pricing (owner).');
+
         return view('cashier.orders.create', [
-            'services' => $this->services(),
-            'freshenerPrice' => self::FRESHENER_PRICE,
+            'services' => $services,
+            'freshenerPrice' => (int) $orders->freshener()->harga,
         ]);
     }
 
     // Tombol Save Order
-    public function store(Request $request)
+    public function store(Request $request, OrderService $orders)
     {
         // Ubah "4,5" menjadi "4.5" sebelum divalidasi
         $request->merge(['weight' => str_replace(',', '.', (string) $request->input('weight'))]);
 
         $data = $request->validate([
-            'whatsapp' => ['required', 'string', 'max:20'],
+            'whatsapp' => ['required', 'string', 'max:20', 'regex:/^[0-9+\s\-()]{8,20}$/'],
             'customer_name' => ['required', 'string', 'max:100'],
             'weight' => ['required', 'numeric', 'gt:0'],
-            'service' => ['required', Rule::in(array_column($this->services(), 'code'))],
+            'service' => ['required', Rule::exists('jenis_layanan', 'id_layanan')->where('status_aktif', true)],
             'payment' => ['required', Rule::in(['cash_paid', 'transfer'])],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $service = collect($this->services())->firstWhere('code', $data['service']);
-        $kg = (float) $data['weight'];
-        $serviceTotal = $kg * $service['price'];
-        $withFreshener = $request->boolean('freshener');
-        $freshenerTotal = $withFreshener ? self::FRESHENER_PRICE : 0;
-
-        $now = Carbon::now();
-        $eta = $now->copy()->addDays($service['days']);
-        $digits = preg_replace('/\D/', '', $data['whatsapp']);
-        $paid = true; // keputusan tim: pembayaran selalu di awal, pesanan langsung lunas
-
-        // TODO (backend): simpan ke database, buat invoice, kirim WhatsApp.
-        // Sementara semua data disimpan di session supaya halaman sukses bisa tampil.
-        $order = [
-            'code' => 'BNG-' . $now->format('ymd') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
-            'cashier' => auth()->user()->nama,
+        // Semua yang menyangkut database & harga ada di OrderService
+        $saved = $orders->create(auth()->user(), [
             'customer_name' => $data['customer_name'],
+            'whatsapp' => $data['whatsapp'],
+            'weight' => (float) $data['weight'],
+            'service_id' => (int) $data['service'],
+            'freshener' => $request->boolean('freshener'),
+        ]);
+
+        $service = $saved->service;
+        $customer = $saved->customer;
+        $addon = $saved->additionalServices->first();
+        $freshenerTotal = $addon ? (float) $addon->pivot->harga_saat_ini : 0.0;
+
+        $now = $saved->waktu_pesanan;
+        $eta = $now->copy()->addDays($service->estimasi_hari);
+        $kg = (float) $saved->berat_kg;
+        $digits = preg_replace('/\D/', '', $customer->no_telepon);
+
+        // Metode bayar & catatan belum punya kolom di database, jadi hanya dibawa ke halaman sukses lewat session.
+        $summary = [
+            'code' => $saved->kode_pesanan,
+            'cashier' => auth()->user()->nama,
+            'customer_name' => $customer->nama,
             'whatsapp' => trim(preg_replace('/(\d{4})(?=\d)/', '$1 ', $digits)),
-            'service_name' => $service['name'],
-            'price_per_kg' => $service['price'],
+            'service_name' => $service->nama_layanan,
+            'price_per_kg' => $service->harga_per_kg,
             'weight_label' => rtrim(rtrim(number_format($kg, 2, ',', ''), '0'), ','),
-            'service_total' => $serviceTotal,
-            'freshener' => $withFreshener,
+            'service_total' => (float) $saved->total_harga - $freshenerTotal,
+            'freshener' => (bool) $addon,
             'freshener_total' => $freshenerTotal,
-            'total' => $serviceTotal + $freshenerTotal,
+            'total' => (float) $saved->total_harga,
             'payment_label' => $data['payment'] === 'transfer' ? 'Transfer' : 'Cash',
-            'paid' => $paid,
+            'paid' => $saved->is_paid,
             'notes' => $data['notes'] ?? null,
             'posted_at' => $now->format('F j, Y') . ', ' . $this->time($now),
             'sent_at' => $now->format('j F Y') . ', ' . $now->format('H.i'),
@@ -88,7 +105,7 @@ class OrderController extends Controller
             'eta_time' => $this->time($eta),
         ];
 
-        session(['last_order' => $order]);
+        session(['last_order' => $summary]);
 
         return redirect()->route('cashier.orders.success');
     }
