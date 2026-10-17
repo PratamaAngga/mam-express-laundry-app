@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Cashier\OrderController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Cashier\CustomerController;
+use App\Http\Controllers\Cashier\ReceiptController;
 use App\Http\Controllers\Owner\InventoryController;
+use Illuminate\Support\Facades\Route;
+
 
 Route::get('/', function () {
     return redirect()->route('cashier.orders.create');
@@ -33,4 +35,5 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
 });

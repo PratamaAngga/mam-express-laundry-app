@@ -1064,3 +1064,142 @@ input.is-invalid {
         grid-template-columns: 1fr;
     }
 }
+
+/* ===== Halaman Print Receipt ===== */
+.select-label {
+    margin-top: 0;
+}
+
+.select-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.select-wide {
+    width: 100%;
+    max-width: 360px;
+}
+
+.receipt-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+    margin-top: 20px;
+}
+
+.paper {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 16px 0;
+    background: #fff;
+    font-size: 12px;
+}
+
+.paper-brand {
+    text-align: center;
+    margin-bottom: 18px;
+}
+
+.paper-brand strong {
+    display: block;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.paper-brand span {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.paper-rule {
+    border: 0;
+    border-top: 1px solid var(--line);
+    margin: 14px 0;
+}
+
+.paper-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 7px 0;
+}
+
+.paper-row.strong {
+    font-weight: 600;
+}
+
+.paper-item-sub {
+    font-size: 10px;
+    color: var(--muted);
+}
+
+.paper-eta {
+    text-align: center;
+    font-size: 11px;
+    margin: 0 0 8px;
+}
+
+.paper-foot {
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 960px) {
+    .receipt-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Ukuran kertas saat mencetak: invoice 80 mm, label 80 x 50 mm */
+@page invoice {
+    size: 80mm auto;
+    margin: 4mm;
+}
+
+@page label {
+    size: 80mm 50mm;
+    margin: 3mm;
+}
+
+#print-area {
+    display: none;
+}
+
+@media print {
+    #print-area {
+        display: block;
+    }
+
+    #print-area .paper {
+        page: invoice;
+        break-after: page;
+        width: 72mm;
+        margin: 0 auto;
+        padding: 0;
+        border: 0;
+    }
+
+    #print-area .label-card {
+        page: label;
+        break-after: page;
+        width: 74mm;
+        margin: 0;
+    }
+}

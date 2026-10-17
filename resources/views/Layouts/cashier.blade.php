@@ -40,7 +40,10 @@
                     class="{{ request()->routeIs('cashier.customers.*') ? 'active' : '' }}">
                     <x-icon name="users" /> Customers
                 </a>
-                <a href="#"><x-icon name="printer" /> Print Receipt</a>
+                <a href="{{ route('cashier.receipt.index') }}"
+                    class="{{ request()->routeIs('cashier.receipt.*') ? 'active' : '' }}">
+                    <x-icon name="printer" /> Print Receipt
+                </a>
             </nav>
 
             <div class="sidebar-bottom">
