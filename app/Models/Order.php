@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
@@ -14,6 +16,13 @@ class Order extends Model
         'dikemas_siap_diambil' => 'Ready for pickup',
         'selesai'              => 'Done',
     ];
+
+    // 4 status resmi (kesepakatan tim, sesuai proposal). Urutan = alur kerja.
+    // Label tampilan ada di STATUS_LABELS di atas, jadi tidak ada daftar label kedua.
+    public const STATUS_QUEUED    = 'antre_cuci';
+    public const STATUS_PROCESSED = 'diproses';
+    public const STATUS_PACKED    = 'dikemas_siap_diambil';
+    public const STATUS_DONE      = 'selesai';
 
     protected $table = 'pesanan';
     protected $primaryKey = 'id_pesanan';
@@ -47,6 +56,24 @@ class Order extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_user_kasir', 'id_user');
+    }
+
+    // Layanan tambahan (mis. pewangi). Harga saat pesanan dibuat ada di pivot: harga_saat_ini.
+    public function additionalServices(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AdditionalService::class,
+            'pesanan_tambahan',
+            'id_pesanan',
+            'id_tambahan',
+            'id_pesanan',
+            'id_tambahan'
+        )->withPivot('harga_saat_ini');
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(OrderStatusHistory::class, 'id_pesanan', 'id_pesanan');
     }
 
     public function getIsPaidAttribute(): bool
