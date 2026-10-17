@@ -11,10 +11,10 @@ class Order extends Model
 {
     /** Database status => label shown on the dashboard */
     public const STATUS_LABELS = [
-        'antre_cuci'           => 'Accepted',
-        'diproses'             => 'Processing',
-        'dikemas_siap_diambil' => 'Ready for pickup',
-        'selesai'              => 'Done',
+        'antre_cuci'           => 'Antre Cuci',
+        'diproses'             => 'Diproses',
+        'dikemas_siap_diambil' => 'Dikemas dan Siap Diambil',
+        'selesai'              => 'Selesai',
     ];
 
     // 4 status resmi (kesepakatan tim, sesuai proposal). Urutan = alur kerja.
