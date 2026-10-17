@@ -48,7 +48,7 @@ class OrderController extends Controller
             'customer_name' => ['required', 'string', 'max:100'],
             'weight' => ['required', 'numeric', 'gt:0'],
             'service' => ['required', Rule::in(array_column($this->services(), 'code'))],
-            'payment' => ['required', Rule::in(['cash_paid', 'cash_later', 'transfer'])],
+            'payment' => ['required', Rule::in(['cash_paid', 'transfer'])],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);
 
@@ -61,13 +61,13 @@ class OrderController extends Controller
         $now = Carbon::now();
         $eta = $now->copy()->addDays($service['days']);
         $digits = preg_replace('/\D/', '', $data['whatsapp']);
-        $paid = $data['payment'] !== 'cash_later';
+        $paid = true; // keputusan tim: pembayaran selalu di awal, pesanan langsung lunas
 
         // TODO (backend): simpan ke database, buat invoice, kirim WhatsApp.
         // Sementara semua data disimpan di session supaya halaman sukses bisa tampil.
         $order = [
             'code' => 'BNG-' . $now->format('ymd') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
-            'cashier' => 'Kartiko',
+            'cashier' => auth()->user()->nama,
             'customer_name' => $data['customer_name'],
             'whatsapp' => trim(preg_replace('/(\d{4})(?=\d)/', '$1 ', $digits)),
             'service_name' => $service['name'],

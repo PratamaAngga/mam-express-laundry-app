@@ -106,7 +106,6 @@
             <label for="payment">Payment</label>
             <select id="payment" name="payment">
                 <option value="cash_paid">Cash &bull; Paid in Full</option>
-                <option value="cash_later">Cash &bull; Pay on Pickup</option>
                 <option value="transfer">Transfer</option>
             </select>
 

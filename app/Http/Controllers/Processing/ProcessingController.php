@@ -40,11 +40,13 @@ class ProcessingController extends Controller
 
     private function data(): array
     {
-        // DATA Dummy
+        // Nama & inisial diambil dari user yang login; 'task' dan 'status' masih dummy
+        $nama = trim(auth()->user()->nama);
+        $words = preg_split('/\s+/', $nama);
         $staff = [
-            'name' => 'Adi Pratama',
-            'first_name' => 'Adi',
-            'initials' => 'AP',
+            'name' => $nama,
+            'first_name' => $words[0],
+            'initials' => collect($words)->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode(''),
             'role' => 'Processing',
             'task' => 'Washing',
             'status' => 'Washing',

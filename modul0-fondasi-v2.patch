@@ -1,0 +1,123 @@
+diff --git a/app/Http/Controllers/Cashier/OrderController.php b/app/Http/Controllers/Cashier/OrderController.php
+index 4e19955..50ef601 100644
+--- a/app/Http/Controllers/Cashier/OrderController.php
++++ b/app/Http/Controllers/Cashier/OrderController.php
+@@ -48,7 +48,7 @@ public function store(Request $request)
+             'customer_name' => ['required', 'string', 'max:100'],
+             'weight' => ['required', 'numeric', 'gt:0'],
+             'service' => ['required', Rule::in(array_column($this->services(), 'code'))],
+-            'payment' => ['required', Rule::in(['cash_paid', 'cash_later', 'transfer'])],
++            'payment' => ['required', Rule::in(['cash_paid', 'transfer'])],
+             'notes' => ['nullable', 'string', 'max:255'],
+         ]);
+ 
+@@ -61,13 +61,13 @@ public function store(Request $request)
+         $now = Carbon::now();
+         $eta = $now->copy()->addDays($service['days']);
+         $digits = preg_replace('/\D/', '', $data['whatsapp']);
+-        $paid = $data['payment'] !== 'cash_later';
++        $paid = true; // keputusan tim: pembayaran selalu di awal, pesanan langsung lunas
+ 
+         // TODO (backend): simpan ke database, buat invoice, kirim WhatsApp.
+         // Sementara semua data disimpan di session supaya halaman sukses bisa tampil.
+         $order = [
+             'code' => 'BNG-' . $now->format('ymd') . '-' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT),
+-            'cashier' => 'Kartiko',
++            'cashier' => auth()->user()->nama,
+             'customer_name' => $data['customer_name'],
+             'whatsapp' => trim(preg_replace('/(\d{4})(?=\d)/', '$1 ', $digits)),
+             'service_name' => $service['name'],
+diff --git a/app/Http/Controllers/Processing/ProcessingController.php b/app/Http/Controllers/Processing/ProcessingController.php
+index 48a4348..8381da3 100644
+--- a/app/Http/Controllers/Processing/ProcessingController.php
++++ b/app/Http/Controllers/Processing/ProcessingController.php
+@@ -40,11 +40,13 @@ public function finishShift()
+ 
+     private function data(): array
+     {
+-        // DATA Dummy
++        // Nama & inisial diambil dari user yang login; 'task' dan 'status' masih dummy
++        $nama = trim(auth()->user()->nama);
++        $words = preg_split('/\s+/', $nama);
+         $staff = [
+-            'name' => 'Adi Pratama',
+-            'first_name' => 'Adi',
+-            'initials' => 'AP',
++            'name' => $nama,
++            'first_name' => $words[0],
++            'initials' => collect($words)->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode(''),
+             'role' => 'Processing',
+             'task' => 'Washing',
+             'status' => 'Washing',
+diff --git a/resources/views/Layouts/cashier.blade.php b/resources/views/Layouts/cashier.blade.php
+index 91577cb..72fb306 100644
+--- a/resources/views/Layouts/cashier.blade.php
++++ b/resources/views/Layouts/cashier.blade.php
+@@ -49,8 +49,8 @@ class="{{ request()->routeIs('cashier.receipt.*') ? 'active' : '' }}">
+             <div class="sidebar-bottom">
+                 <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help Center</a>
+                 <div class="user">
+-                    <span class="avatar">K</span>
+-                    <span class="user-info"><strong>Kartiko</strong><br><span class="muted small">Cashier</span></span>
++                    <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
++                    <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span class="muted small">Cashier</span></span>
+                     <a href="#" class="logout" aria-label="Log out"><x-icon name="log-out" :size="16" /></a>
+                 </div>
+             </div>
+diff --git a/resources/views/cashier/orders/create.blade.php b/resources/views/cashier/orders/create.blade.php
+index 8c3747d..f16a4e7 100644
+--- a/resources/views/cashier/orders/create.blade.php
++++ b/resources/views/cashier/orders/create.blade.php
+@@ -106,7 +106,6 @@
+             <label for="payment">Payment</label>
+             <select id="payment" name="payment">
+                 <option value="cash_paid">Cash &bull; Paid in Full</option>
+-                <option value="cash_later">Cash &bull; Pay on Pickup</option>
+                 <option value="transfer">Transfer</option>
+             </select>
+ 
+diff --git a/routes/web.php b/routes/web.php
+index f5d8dd7..5b8f590 100644
+--- a/routes/web.php
++++ b/routes/web.php
+@@ -12,7 +12,7 @@
+ use Illuminate\Support\Facades\Route;
+ 
+ Route::get('/', function () {
+-    return redirect()->route('cashier.orders.create');
++    return redirect()->route('dashboard');
+ });
+ 
+ Route::middleware('guest')->group(function () {
+@@ -26,8 +26,11 @@
+     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+     Route::get('/dashboard', function () {
+         return match (auth()->user()->role) {
+-            'owner_admin' => redirect()->route('owner.inventory.index'),
+-            default       => redirect()->route('cashier.orders.create'),
++            'owner_admin'        => redirect()->route('owner.inventory.index'),
++            'kasir'              => redirect()->route('cashier.orders.create'),
++            'petugas_processing' => redirect()->route('processing.home'),
++            // supplier: halamannya belum dibuat
++            default              => abort(403, 'Halaman untuk role ini belum tersedia.'),
+         };
+     })->name('dashboard');
+ });
+@@ -54,7 +57,7 @@
+     Route::patch('/employees/{user}/status', [EmployeeController::class, 'toggleStatus'])->name('employees.status');
+ });
+ 
+-Route::prefix('cashier')->name('cashier.')->group(function () {
++Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->group(function () {
+     Route::get('/orders/create', [OrderController::class, 'create'])->name('orders.create');
+     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+     Route::get('/orders/success', [OrderController::class, 'success'])->name('orders.success');
+@@ -64,7 +67,7 @@
+     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
+ });
+ 
+-Route::prefix('processing')->name('processing.')->group(function () {
++Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->name('processing.')->group(function () {
+     Route::get('/', [ProcessingController::class, 'home'])->name('home');
+     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
+     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
