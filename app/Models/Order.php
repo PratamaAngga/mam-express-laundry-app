@@ -7,6 +7,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Order extends Model
 {
+    /** Database status => label shown on the dashboard */
+    public const STATUS_LABELS = [
+        'antre_cuci'           => 'Accepted',
+        'diproses'             => 'Processing',
+        'dikemas_siap_diambil' => 'Ready for pickup',
+        'selesai'              => 'Done',
+    ];
+
     protected $table = 'pesanan';
     protected $primaryKey = 'id_pesanan';
     public $timestamps = false;
@@ -44,6 +52,11 @@ class Order extends Model
     public function getIsPaidAttribute(): bool
     {
         return $this->status_pembayaran === 'lunas';
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUS_LABELS[$this->status] ?? $this->status;
     }
 
     /** 41000 -> "Rp41.000" */

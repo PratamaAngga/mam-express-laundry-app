@@ -5,6 +5,7 @@ use App\Http\Controllers\Cashier\CustomerController;
 use App\Http\Controllers\Cashier\OrderController;
 use App\Http\Controllers\Cashier\ReceiptController;
 use App\Http\Controllers\Owner\EmployeeController;
+use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
@@ -27,7 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', function () {
         return match (auth()->user()->role) {
-            'owner_admin'        => redirect()->route('owner.inventory.index'),
+            'owner_admin'        => redirect()->route('owner.dashboard'),
             'kasir'              => redirect()->route('cashier.orders.create'),
             'petugas_processing' => redirect()->route('processing.home'),
             // supplier: halamannya belum dibuat
@@ -37,6 +38,10 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')->group(function () {
+    // Dasboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
+
     // Raw Material Inventory
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
 
