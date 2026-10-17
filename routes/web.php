@@ -6,7 +6,7 @@ use App\Http\Controllers\Cashier\CustomerController;
 use App\Http\Controllers\Cashier\ReceiptController;
 use App\Http\Controllers\Owner\InventoryController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Owner\RestockController;
 
 Route::get('/', function () {
     return redirect()->route('cashier.orders.create');
@@ -36,4 +36,12 @@ Route::prefix('cashier')->name('cashier.')->group(function () {
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
+});
+
+Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')->group(function () {
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+
+    Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
+    Route::get('/restock/create', [RestockController::class, 'create'])->name('restock.create');
+    Route::post('/restock', [RestockController::class, 'store'])->name('restock.store');
 });
