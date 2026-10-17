@@ -18,11 +18,10 @@
 
     <div class="stats">
         <div class="stat"><span class="muted">All orders</span><strong>{{ $counts['all'] }}</strong></div>
-        <div class="stat"><span class="muted">Accepted (in queue)</span><strong>{{ $counts['queued'] }}</strong></div>
-        <div class="stat"><span class="muted">Currently being processed</span><strong>{{ $counts['processing'] }}</strong>
-        </div>
-        <div class="stat"><span class="muted">Ready for pickup</span><strong>{{ $counts['ready'] }}</strong></div>
-        <div class="stat"><span class="muted">Done</span><strong>{{ $counts['done'] }}</strong></div>
+        <div class="stat"><span class="muted">{{ $statuses['antre_cuci'] }}</span><strong>{{ $counts['queued'] }}</strong></div>
+        <div class="stat"><span class="muted">{{ $statuses['diproses'] }}</span><strong>{{ $counts['processing'] }}</strong></div>
+        <div class="stat"><span class="muted">{{ $statuses['dikemas_siap_diambil'] }}</span><strong>{{ $counts['ready'] }}</strong></div>
+        <div class="stat"><span class="muted">{{ $statuses['selesai'] }}</span><strong>{{ $counts['done'] }}</strong></div>
     </div>
 
     <div class="toolbar">
