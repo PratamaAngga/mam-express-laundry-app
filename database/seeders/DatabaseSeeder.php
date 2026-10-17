@@ -33,6 +33,26 @@ class DatabaseSeeder extends Seeder
             'status_aktif' => true,
         ]);
 
+        // Employees: same as the Employee page design (Lia is inactive)
+        $employees = [
+            ['Kartiko',        'kartiko@gmail.com',     '081300000001', 'kasir', true],
+            ['Rizky Saputra',  'rizky@mamexpress.test', '081300000002', 'kasir', true],
+            ['Sari Wulandari', 'sari@mamexpress.test',  '081300000003', 'kasir', true],
+            ['Lia Kartika',    'lia@mamexpress.test',   '081300000004', 'kasir', false],
+        ];
+
+        foreach ($employees as [$name, $email, $phone, $role, $active]) {
+            User::create([
+                'nama'         => $name,
+                'username'     => str($name)->slug()->toString(),
+                'email'        => $email,
+                'no_hp'        => $phone,
+                'role'         => $role,
+                'password'     => Hash::make('password123'),
+                'status_aktif' => $active,
+            ]);
+        }
+
         // Suppliers: each supplier = 1 row in `users` + 1 row in `supplier`
         $aroma = $this->createSupplier('PT Aroma Bersih', 'aroma@mamexpress.test', '081188005500', 'Jl. Soekarno Hatta, Malang');
         $kemasan = $this->createSupplier('CV Kemasan Jaya', 'kemasan@mamexpress.test', '081399004400', 'Jl. Raya Singosari, Malang');
