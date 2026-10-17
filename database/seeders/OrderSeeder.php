@@ -16,6 +16,7 @@ class OrderSeeder extends Seeder
 {
     public function run(): void
     {
+        // Use an existing cashier, or create one if none exists yet
         $cashier = User::where('role', 'kasir')->first() ?? User::create([
             'nama'         => 'Kartiko',
             'username'     => 'kartiko',
@@ -26,7 +27,7 @@ class OrderSeeder extends Seeder
             'status_aktif' => true,
         ]);
 
-        // Services and the add-on are created by ServiceSeeder (run it first).
+        // Services and the add-on are normally created by ServiceSeeder (run it first).
         // firstOrCreate keeps this seeder safe to run on its own too.
         $laundry     = Service::firstOrCreate(['nama_layanan' => 'Laundry'],        ['harga_per_kg' => 8000, 'estimasi_hari' => 3]);
         $iron        = Service::firstOrCreate(['nama_layanan' => 'Just Iron'],      ['harga_per_kg' => 6000, 'estimasi_hari' => 2]);
@@ -37,20 +38,23 @@ class OrderSeeder extends Seeder
             ['harga' => 5000],
         );
 
-        // Same 8 transactions as the Report design (Oct 3–9, 2026)
-        // [date, code, customer, service, weight kg, total]
+        // Same 8 transactions as the Report design (Oct 3–9, 2026).
+        // [date, code, customer, service, weight kg, total, status]
+        //
+        // Statuses give the Dashboard "Orders by Status" cards:
+        //   antre_cuci 1 • diproses 2 • dikemas_siap_diambil 2 • selesai 3  (5 active orders)
         $rows = [
-            ['2026-10-09 11:15:00', 'BNG-261009-0428', 'Siti Rahma',    $laundryIron, 4.5, 41000],
-            ['2026-10-09 09:30:00', 'BNG-261009-0427', 'Budi Santoso',  $laundry,     3,   52000],
-            ['2026-10-08 14:00:00', 'BNG-261008-0426', 'Rina Amelia',   $laundryIron, 5,   40000],
-            ['2026-10-07 10:45:00', 'BNG-261007-0425', 'Andi Pratama',  $iron,        2,   12000],
-            ['2026-10-06 16:20:00', 'BNG-261006-0424', 'Dewi Lestari',  $laundryIron, 6,   53000],
-            ['2026-10-05 13:10:00', 'BNG-261005-0423', 'Agus Hidayat',  $laundry,     4,   56000],
-            ['2026-10-04 15:40:00', 'BNG-261004-0422', 'Maya Putri',    $laundryIron, 3.5, 28000],
-            ['2026-10-03 09:05:00', 'BNG-261003-0421', 'Fajar Nugroho', $iron,        2,   12000],
+            ['2026-10-09 11:15:00', 'BNG-261009-0428', 'Siti Rahma',    $laundryIron, 4.5, 41000, 'antre_cuci'],
+            ['2026-10-09 09:30:00', 'BNG-261009-0427', 'Budi Santoso',  $laundry,     3,   52000, 'diproses'],
+            ['2026-10-08 14:00:00', 'BNG-261008-0426', 'Rina Amelia',   $laundryIron, 5,   40000, 'diproses'],
+            ['2026-10-07 10:45:00', 'BNG-261007-0425', 'Andi Pratama',  $iron,        2,   12000, 'dikemas_siap_diambil'],
+            ['2026-10-06 16:20:00', 'BNG-261006-0424', 'Dewi Lestari',  $laundryIron, 6,   53000, 'dikemas_siap_diambil'],
+            ['2026-10-05 13:10:00', 'BNG-261005-0423', 'Agus Hidayat',  $laundry,     4,   56000, 'selesai'],
+            ['2026-10-04 15:40:00', 'BNG-261004-0422', 'Maya Putri',    $laundryIron, 3.5, 28000, 'selesai'],
+            ['2026-10-03 09:05:00', 'BNG-261003-0421', 'Fajar Nugroho', $iron,        2,   12000, 'selesai'],
         ];
 
-        foreach ($rows as $i => [$when, $code, $customerName, $service, $weight, $total]) {
+        foreach ($rows as $i => [$when, $code, $customerName, $service, $weight, $total, $status]) {
             $customer = Customer::create([
                 'nama'       => $customerName,
                 'no_telepon' => '08572000' . str_pad((string) ($i + 1), 4, '0', STR_PAD_LEFT),
@@ -64,10 +68,10 @@ class OrderSeeder extends Seeder
                 'berat_kg'          => $weight,
                 'total_harga'       => $total,
                 'status_pembayaran' => 'lunas',
-                'status'            => 'selesai',
+                'status'            => $status,
                 'token_tracking'    => Str::random(40),
                 'waktu_pesanan'     => $when,
-                'waktu_selesai'     => $when,
+                'waktu_selesai'     => $status === 'selesai' ? $when : null,
             ]);
 
             // The first order includes the add-on. harga_saat_ini is the price at the time
