@@ -87,12 +87,10 @@ Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->na
     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
     Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
-    Route::post('/work-session/update-status', [ProcessingController::class, 'updateStatus'])->name('work-session.update');
 
-    // Scan QR / kode manual -> konfirmasi -> ubah status
-    Route::post('/scan', [ProcessingOrderController::class, 'find'])->name('scan');
-    Route::get('/orders/{code}', [ProcessingOrderController::class, 'show'])->where('code', '[A-Za-z0-9-]+')->name('order.show');
-    Route::post('/orders/{code}/advance', [ProcessingOrderController::class, 'advance'])->where('code', '[A-Za-z0-9-]+')->name('order.advance');
+    // Endpoint JSON Work Session: cek pesanan (lookup) lalu ubah status (update)
+    Route::get('/work-session/orders/{code}', [ProcessingOrderController::class, 'lookup'])->where('code', '[A-Za-z0-9-]+')->name('work-session.lookup');
+    Route::post('/work-session/update-status', [ProcessingOrderController::class, 'update'])->name('work-session.update');
 });
 
 Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
