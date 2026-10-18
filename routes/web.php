@@ -13,6 +13,7 @@ use App\Http\Controllers\Owner\ServicePricingController;
 use App\Http\Controllers\Supplier\RestockOrderController;
 use App\Http\Controllers\Supplier\ShipmentController;
 use App\Http\Controllers\Processing\ProcessingController;
+use App\Http\Controllers\Processing\ProcessingOrderController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -86,6 +87,11 @@ Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->na
     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
     Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
+
+    // Scan QR / kode manual -> konfirmasi -> ubah status
+    Route::post('/scan', [ProcessingOrderController::class, 'find'])->name('scan');
+    Route::get('/orders/{code}', [ProcessingOrderController::class, 'show'])->where('code', '[A-Za-z0-9-]+')->name('order.show');
+    Route::post('/orders/{code}/advance', [ProcessingOrderController::class, 'advance'])->where('code', '[A-Za-z0-9-]+')->name('order.advance');
 });
 
 Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
