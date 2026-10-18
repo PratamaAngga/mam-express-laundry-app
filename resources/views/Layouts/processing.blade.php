@@ -46,8 +46,7 @@
                     <span class="shift-label">YOUR SHIFT</span>
                     <strong>{{ $shift['hours'] }}</strong>
                     @if ($shift['started'])
-                        <span class="shift-status on"><span class="live-dot"></span> Started at
-                            {{ $shift['started_at'] }}</span>
+                        <span class="shift-status on"><span class="live-dot"></span> Shift in progress</span>
                     @else
                         <span class="shift-status"><x-icon name="circle" :size="10" /> Not started</span>
                     @endif
