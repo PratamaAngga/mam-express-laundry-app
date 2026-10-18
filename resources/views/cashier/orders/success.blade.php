@@ -4,36 +4,6 @@
 
 @php
     $rp = fn($n) => 'Rp' . number_format($n, 0, ',', '.');
-
-    // Ilustrasi QR ya teman masihan, JAN LUPA DIGANTI YA
-    $n = 21;
-    $state = crc32($order['code']);
-    $rects = '';
-    $corners = [[0, 0], [$n - 7, 0], [0, $n - 7]];
-    for ($y = 0; $y < $n; $y++) {
-        for ($x = 0; $x < $n; $x++) {
-            $dark = null;
-            foreach ($corners as [$cx, $cy]) {
-                $rx = $x - $cx;
-                $ry = $y - $cy;
-                if ($rx >= -1 && $rx <= 7 && $ry >= -1 && $ry <= 7) {
-                    if ($rx < 0 || $rx > 6 || $ry < 0 || $ry > 6) {
-                        $dark = false;
-                    } else {
-                        $dark = ($rx == 0 || $rx == 6 || $ry == 0 || $ry == 6)
-                            || ($rx >= 2 && $rx <= 4 && $ry >= 2 && $ry <= 4);
-                    }
-                }
-            }
-            if ($dark === null) {
-                $state = ($state * 1103515245 + 12345) & 0x7fffffff;
-                $dark = (($state >> 16) & 1) === 1;
-            }
-            if ($dark) {
-                $rects .= '<rect x="' . $x . '" y="' . $y . '" width="1" height="1"/>';
-            }
-        }
-    }
 @endphp
 
 @section('content')
@@ -144,10 +114,10 @@
                         <span class="pill pill-amber">{{ \App\Models\Order::STATUS_LABELS[\App\Models\Order::STATUS_QUEUED] }}</span>
                     </div>
                     <div class="label-body">
-                        <svg class="qr" viewBox="0 0 {{ $n }} {{ $n }}" shape-rendering="crispEdges" role="img"
-                            aria-label="QR code illustration">
-                            <rect width="{{ $n }}" height="{{ $n }}" fill="#fff" />
-                            <g fill="#000">{!! $rects !!}</g>
+                        <svg class="qr" viewBox="0 0 {{ $qr['size'] }} {{ $qr['size'] }}" shape-rendering="crispEdges" role="img"
+                            aria-label="QR code for this order">
+                            <rect width="100%" height="100%" fill="#fff" />
+                            <g fill="#000">{!! $qr['rects'] !!}</g>
                         </svg>
                         <div class="label-info small">
                             <span>{{ $order['code'] }}</span>
@@ -156,7 +126,7 @@
                             <span>Done: {{ $order['eta_label'] }}</span>
                         </div>
                     </div>
-                    <p class="label-note">QR Illustration &bull; Not an operational code</p>
+                    <p class="label-note">Scan to open this order &bull; For processing staff</p>
                 </div>
 
                 <button type="button" class="btn no-print" onclick="window.print()"><x-icon name="printer" :size="16" />
