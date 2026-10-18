@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
@@ -29,15 +30,30 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
+        // Batasi percobaan login (anti tebak password): maksimal 5 kali per menit untuk kombinasi akun + alamat IP
+        $throttleKey = Str::lower($credentials['login']) . '|' . $request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+
+            return back()
+                ->withErrors(['login' => "Terlalu banyak percobaan masuk. Coba lagi dalam {$seconds} detik."])
+                ->onlyInput('login');
+        }
+
         $field = filter_var($credentials['login'], FILTER_VALIDATE_EMAIL) ? 'email' : 'no_hp';
 
         $user = User::where($field, $credentials['login'])->first();
 
         if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+            RateLimiter::hit($throttleKey, 60);
+
             return back()
                 ->withErrors(['login' => 'Email/nomor WhatsApp atau password salah.'])
                 ->onlyInput('login');
         }
+
+        RateLimiter::clear($throttleKey);
 
         if (! $user->status_aktif) {
             return back()
