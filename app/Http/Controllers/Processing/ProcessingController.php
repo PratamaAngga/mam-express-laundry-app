@@ -80,11 +80,16 @@ class ProcessingController extends Controller
     // DATA DUMMY
     private function staff(): array
     {
+        // Nama dan inisial diambil dari akun yang sedang login
+        $nama = trim(auth()->user()->nama);
+        $words = preg_split('/\s+/', $nama);
+
         return [
-            'name' => 'Adi Maulana',
-            'first_name' => 'Adi',
-            'initials' => 'AP',
+            'name' => $nama,
+            'first_name' => $words[0],
+            'initials' => collect($words)->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode(''),
             'role' => 'Processing',
+            // TODO (backend): 'task' dan 'status' masih dummy, diganti saat updateStatus tersambung ke database
             'task' => 'Washing',
             'status' => 'Washing',
         ];
