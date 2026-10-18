@@ -38,7 +38,7 @@ class ProcessingController extends Controller
         return redirect()->route('processing.home');
     }
 
-    private function data(): array
+    protected function data(): array
     {
         // Nama & inisial diambil dari user yang login; 'task' dan 'status' masih dummy
         $nama = trim(auth()->user()->nama);

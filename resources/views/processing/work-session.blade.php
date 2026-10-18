@@ -20,14 +20,26 @@
             <p class="muted">Started at {{ $shift['started_at'] }} &middot; Assigned task: {{ $staff['task'] }} &rarr; Status:
                 {{ $staff['status'] }}</p>
 
-            {{-- TODO: pemindai QR keranjang dibuat dari mockup berikutnya --}}
-            <div class="info-box">
-                <x-icon name="scan-line" :size="18" />
-                <div>
-                    <strong>Basket scanner coming soon</strong><br>
-                    <span class="small">The scanner for basket QR codes will appear here.</span>
+            {{-- Pemindai kamera (dipakai di HP pribadi petugas) --}}
+            <div id="scanner" class="scanner" data-order-base="{{ url('/processing/orders') }}">
+                <div id="scanner-view" class="scanner-view"></div>
+                <p id="scanner-msg" class="small muted" role="status">Scan the QR label on the basket to open the order.</p>
+                <div class="scanner-actions">
+                    <button type="button" id="scanner-start" class="btn-primary"><x-icon name="scan-line" :size="16" /> Start camera</button>
+                    <button type="button" id="scanner-stop" class="btn-outline" hidden>Stop camera</button>
                 </div>
             </div>
+
+            {{-- Cadangan kalau QR gagal terbaca --}}
+            <form method="POST" action="{{ route('processing.scan') }}" class="scan-form">
+                @csrf
+                <input type="text" name="code" class="field-input" placeholder="Or type the order code, e.g. BNG-261017-0001"
+                    value="{{ old('code') }}" autocomplete="off" required>
+                <button type="submit" class="btn-outline">Open order</button>
+            </form>
+            @error('code')
+                <p class="small field-error">{{ $message }}</p>
+            @enderror
 
             <form method="POST" action="{{ route('processing.shift.finish') }}">
                 @csrf
@@ -40,3 +52,8 @@
         @endif
     </section>
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('js/vendor/html5-qrcode.min.js') }}"></script>
+    <script src="{{ asset('js/processing-scanner.js') }}?v={{ filemtime(public_path('js/processing-scanner.js')) }}"></script>
+@endpush
