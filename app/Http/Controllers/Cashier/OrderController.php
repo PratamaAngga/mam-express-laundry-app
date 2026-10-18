@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Service;
 use App\Services\OrderService;
+use App\Services\QrCodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -112,7 +113,10 @@ class OrderController extends Controller
             return redirect()->route('cashier.orders.create');
         }
 
-        return view('cashier.orders.success', ['order' => $order]);
+        // QR berisi alamat halaman order untuk petugas processing
+        $qr = app(QrCodeService::class)->rects(route('processing.order.show', ['code' => $order['code']]));
+
+        return view('cashier.orders.success', ['order' => $order, 'qr' => $qr]);
     }
 
     // Halaman Order List (data dari database, 100 pesanan terbaru)

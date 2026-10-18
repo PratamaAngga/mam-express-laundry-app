@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Cashier;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Services\QrCodeService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -49,6 +50,8 @@ class ReceiptController extends Controller
         $eta = $placed->copy()->addDays($o->service->estimasi_hari);
         $kgLabel = Order::kg($kg);
         $serviceName = $o->service->nama_layanan;
+        // QR berisi alamat halaman order untuk petugas processing (dibuka lewat kamera HP)
+        $qr = app(QrCodeService::class)->rects(route('processing.order.show', ['code' => $o->kode_pesanan]));
 
         return [
             'code' => $o->kode_pesanan,
@@ -73,7 +76,8 @@ class ReceiptController extends Controller
             'weight_service' => $kgLabel . ' kg • ' . $serviceName,
             'completed' => 'Completed: ' . $eta->format('M j, Y') . ', ' . $this->time($eta),
             'sent_text' => 'To ' . $phone . ' on ' . $placed->format('F j') . ' at ' . $this->time($placed) . '.',
-            'qr' => $this->qrRects($o->kode_pesanan),
+            'qr' => $qr['rects'],
+            'qr_size' => $qr['size'],
         ];
     }
 
@@ -86,41 +90,5 @@ class ReceiptController extends Controller
     private function time(Carbon $date): string
     {
         return $date->format('g:i') . ' ' . ($date->format('a') === 'am' ? 'a.m.' : 'p.m.');
-    }
-
-    // Ilustrasi QR (BUKAN QR asli): pola digambar dari kode order.
-    private function qrRects(string $code): string
-    {
-        $n = 21;
-        $state = crc32($code);
-        $rects = '';
-        $corners = [[0, 0], [$n - 7, 0], [0, $n - 7]];
-
-        for ($y = 0; $y < $n; $y++) {
-            for ($x = 0; $x < $n; $x++) {
-                $dark = null;
-                foreach ($corners as [$cx, $cy]) {
-                    $rx = $x - $cx;
-                    $ry = $y - $cy;
-                    if ($rx >= -1 && $rx <= 7 && $ry >= -1 && $ry <= 7) {
-                        if ($rx < 0 || $rx > 6 || $ry < 0 || $ry > 6) {
-                            $dark = false;
-                        } else {
-                            $dark = ($rx == 0 || $rx == 6 || $ry == 0 || $ry == 6)
-                                || ($rx >= 2 && $rx <= 4 && $ry >= 2 && $ry <= 4);
-                        }
-                    }
-                }
-                if ($dark === null) {
-                    $state = ($state * 1103515245 + 12345) & 0x7fffffff;
-                    $dark = (($state >> 16) & 1) === 1;
-                }
-                if ($dark) {
-                    $rects .= '<rect x="' . $x . '" y="' . $y . '" width="1" height="1"/>';
-                }
-            }
-        }
-
-        return $rects;
     }
 }

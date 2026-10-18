@@ -101,9 +101,9 @@
                             data-status-pill>{{ $selected['status_label'] }}</span>
                     </div>
                     <div class="label-body">
-                        <svg class="qr" viewBox="0 0 21 21" shape-rendering="crispEdges" role="img"
-                            aria-label="QR code illustration">
-                            <rect width="21" height="21" fill="#fff" />
+                        <svg class="qr" viewBox="0 0 {{ $selected['qr_size'] }} {{ $selected['qr_size'] }}" shape-rendering="crispEdges"
+                            role="img" aria-label="QR code for this order">
+                            <rect width="100%" height="100%" fill="#fff" />
                             <g fill="#000" class="qr-rects">{!! $selected['qr'] !!}</g>
                         </svg>
                         <div class="label-info small">
@@ -113,7 +113,7 @@
                             <span data-f="completed">{{ $selected['completed'] }}</span>
                         </div>
                     </div>
-                    <p class="label-note">QR Illustration &bull; Not an operational code</p>
+                    <p class="label-note">Scan to open this order &bull; For processing staff</p>
                 </div>
 
                 <button type="button" class="btn" id="print-label"><x-icon name="printer" :size="16" /> Print QR
@@ -190,6 +190,7 @@
                     });
                     document.querySelectorAll('.qr-rects').forEach(function (el) {
                         el.innerHTML = o.qr;
+                        el.closest('svg').setAttribute('viewBox', '0 0 ' + o.qr_size + ' ' + o.qr_size);
                     });
                 }
 
