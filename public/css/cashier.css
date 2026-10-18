@@ -1198,3 +1198,13 @@ input.is-invalid {
         margin: 0;
     }
 }
+
+.logout-form { margin: 0; display: flex; }
+button.logout {
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font: inherit;
+}
+button.logout:hover { color: var(--text, inherit); }

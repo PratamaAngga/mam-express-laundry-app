@@ -51,7 +51,10 @@
                 <div class="user">
                     <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
                     <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span class="muted small">Cashier</span></span>
-                    <a href="#" class="logout" aria-label="Log out"><x-icon name="log-out" :size="16" /></a>
+                    <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                        @csrf
+                        <button type="submit" class="logout" aria-label="Log out" title="Log out"><x-icon name="log-out" :size="16" /></button>
+                    </form>
                 </div>
             </div>
         </aside>
