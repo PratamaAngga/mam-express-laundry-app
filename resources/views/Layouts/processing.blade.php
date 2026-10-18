@@ -58,7 +58,10 @@
                         <strong>{{ $staff['name'] }}</strong><br>
                         <span class="muted small">{{ $staff['role'] }} &middot; {{ $staff['task'] }}</span>
                     </span>
-                    <a href="#" class="logout" aria-label="Log out"><x-icon name="log-out" :size="16" /></a>
+                    <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                        @csrf
+                        <button type="submit" class="logout" aria-label="Log out" title="Log out"><x-icon name="log-out" :size="16" /></button>
+                    </form>
                 </div>
             </div>
         </aside>
