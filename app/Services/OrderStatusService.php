@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
  */
 class OrderStatusService
 {
+    // Jeda anti dobel-scan (detik) kalau klien belum mengirim status yang dilihat petugas
+    private const COOLDOWN_SECONDS = 15;
+
     // status sekarang => status berikutnya + role yang berhak memajukannya
     private const FLOW = [
         Order::STATUS_QUEUED    => ['to' => Order::STATUS_PROCESSED, 'role' => 'petugas_processing'],
@@ -37,31 +40,49 @@ class OrderStatusService
         return self::roleFor($current) === $role;
     }
 
+    /** Alasan kenapa role ini tidak bisa memajukan status; null kalau boleh. */
+    public static function blockedReason(string $role, string $current): ?string
+    {
+        if (self::next($current) === null) {
+            return 'This order is already done.';
+        }
+
+        if (! self::allowed($role, $current)) {
+            return $current === Order::STATUS_PACKED
+                ? 'This order is packed and waiting at the counter. The cashier marks it as done at pickup.'
+                : 'Your role is not allowed to update this status.';
+        }
+
+        return null;
+    }
+
     /**
-     * Majukan status satu langkah. $expectedFrom = status yang dilihat petugas di layar; kalau di database
-     * sudah berubah (mis. dua orang menekan tombol bersamaan) pesanan ditolak, supaya status tidak melompat.
+     * Majukan status satu langkah.
+     * $expectedFrom = status yang dilihat petugas di layar; kalau di database sudah berubah (mis. dua orang
+     * menekan tombol bersamaan) pesanan ditolak, supaya status tidak melompat. Kalau null (klien belum
+     * mengirimnya), dipasang jeda singkat anti dobel-scan oleh petugas yang sama.
      */
-    public function advance(User $actor, string $kode, string $expectedFrom): Order
+    public function advance(User $actor, string $kode, ?string $expectedFrom = null): Order
     {
         return DB::transaction(function () use ($actor, $kode, $expectedFrom) {
             // lockForUpdate: kunci baris selama transaksi, supaya dua permintaan tidak saling menimpa
             $order = Order::where('kode_pesanan', $kode)->lockForUpdate()->firstOrFail();
 
-            if ($order->status !== $expectedFrom) {
+            if ($expectedFrom !== null && $order->status !== $expectedFrom) {
                 $now = Order::STATUS_LABELS[$order->status] ?? $order->status;
                 throw new InvalidStatusTransition("This order was just updated (now: {$now}). Reload the page and check again.");
             }
 
+            $reason = self::blockedReason($actor->role, $order->status);
+            if ($reason !== null) {
+                throw new InvalidStatusTransition($reason);
+            }
+
+            if ($expectedFrom === null && $this->updatedRecentlyBy($actor, $order)) {
+                throw new InvalidStatusTransition('This order was just updated. Wait a moment before updating it again.');
+            }
+
             $next = self::next($order->status);
-
-            if ($next === null) {
-                throw new InvalidStatusTransition('This order has no further status.');
-            }
-
-            if (! self::allowed($actor->role, $order->status)) {
-                throw new InvalidStatusTransition('Your role is not allowed to update this status.');
-            }
-
             $old = $order->status;
             $now = now();
 
@@ -81,5 +102,13 @@ class OrderStatusService
 
             return $order;
         });
+    }
+
+    private function updatedRecentlyBy(User $actor, Order $order): bool
+    {
+        return OrderStatusHistory::where('id_pesanan', $order->id_pesanan)
+            ->where('id_user', $actor->id_user)
+            ->where('waktu_perubahan', '>=', now()->subSeconds(self::COOLDOWN_SECONDS))
+            ->exists();
     }
 }
