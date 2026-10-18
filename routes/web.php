@@ -82,11 +82,12 @@ Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->
     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
 });
 
-Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->name('processing.')->group(function () {
+Route::prefix('processing')->name('processing.')->group(function () {
     Route::get('/', [ProcessingController::class, 'home'])->name('home');
     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
     Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
+    Route::post('/work-session/update-status', [ProcessingController::class, 'updateStatus'])->name('work-session.update');
 
     // Scan QR / kode manual -> konfirmasi -> ubah status
     Route::post('/scan', [ProcessingOrderController::class, 'find'])->name('scan');
