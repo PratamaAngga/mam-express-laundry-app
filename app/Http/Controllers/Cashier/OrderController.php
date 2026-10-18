@@ -113,8 +113,8 @@ class OrderController extends Controller
             return redirect()->route('cashier.orders.create');
         }
 
-        // QR berisi alamat halaman order untuk petugas processing
-        $qr = app(QrCodeService::class)->rects(route('processing.order.show', ['code' => $order['code']]));
+        // QR hanya berisi kode pesanan; pemindai di halaman Work Session yang mengurus sisanya
+        $qr = app(QrCodeService::class)->rects($order['code']);
 
         return view('cashier.orders.success', ['order' => $order, 'qr' => $qr]);
     }

@@ -3,66 +3,112 @@
 namespace App\Http\Controllers\Processing;
 
 use App\Exceptions\InvalidStatusTransition;
+use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\OrderStatusService;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
-class ProcessingOrderController extends ProcessingController
+/**
+ * Endpoint JSON untuk halaman Work Session: scan QR -> cek pesanan (lookup) -> konfirmasi (update).
+ * Logika status ada di OrderStatusService; controller ini hanya validasi dan membentuk respons.
+ */
+class ProcessingOrderController extends Controller
 {
-    // Teks tombol sesuai status pesanan saat ini
-    private const ACTION_LABELS = [
-        Order::STATUS_QUEUED    => 'Start processing',
-        Order::STATUS_PROCESSED => 'Mark as packed',
-    ];
+    private const ID_PATTERN = '/^[A-Za-z]{2,5}-\d{3,6}(-\d{3,6})?$/';
 
-    // Kode diketik manual (cadangan kalau QR gagal terbaca)
-    public function find(Request $request)
+    // GET: status pesanan sekarang dan aksi berikutnya (untuk tahap konfirmasi)
+    public function lookup(Request $request, string $code): JsonResponse
     {
-        $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
-        $code = strtoupper(trim($data['code']));
-
-        if (! Order::where('kode_pesanan', $code)->exists()) {
-            return back()
-                ->withErrors(['code' => 'Order code not found. Check the label and try again.'])
-                ->withInput();
+        if ($denied = $this->shiftNotStarted()) {
+            return $denied;
         }
 
-        return redirect()->route('processing.order.show', ['code' => $code]);
-    }
+        if (! preg_match(self::ID_PATTERN, $code)) {
+            return $this->invalidId();
+        }
 
-    // Halaman yang terbuka saat QR di label dipindai
-    public function show(string $code)
-    {
-        $order = Order::with([
-            'customer',
-            'service',
-            'additionalServices',
-            'histories' => fn ($q) => $q->orderBy('waktu_perubahan')->orderBy('id_riwayat'),
-        ])->where('kode_pesanan', strtoupper($code))->firstOrFail();
+        $order = Order::with(['customer', 'service'])->where('kode_pesanan', strtoupper($code))->first();
+        if (! $order) {
+            return $this->notFound();
+        }
 
-        return view('processing.order', $this->data() + [
-            'order' => $order,
-            'labels' => Order::STATUS_LABELS,
-            'next' => OrderStatusService::next($order->status),
-            'canAdvance' => OrderStatusService::allowed(auth()->user()->role, $order->status),
-            'actionLabel' => self::ACTION_LABELS[$order->status] ?? null,
+        $next = OrderStatusService::next($order->status);
+        $reason = OrderStatusService::blockedReason($request->user()->role, $order->status);
+
+        return response()->json([
+            'ok' => true,
+            'order_id' => $order->kode_pesanan,
+            'customer' => $order->customer->nama,
+            'service' => $order->service->nama_layanan,
+            'weight_kg' => Order::kg($order->berat_kg),
+            'status' => $order->status,
+            'status_label' => Order::STATUS_LABELS[$order->status] ?? $order->status,
+            'next_status' => $next,
+            'next_label' => $next ? Order::STATUS_LABELS[$next] : null,
+            'can_advance' => $reason === null,
+            'message' => $reason,
         ]);
     }
 
-    // Tombol konfirmasi
-    public function advance(Request $request, OrderStatusService $statuses, string $code)
+    // POST: majukan status satu langkah. Opsional kirim "from" (status yang dilihat petugas) sebagai pengaman.
+    public function update(Request $request, OrderStatusService $statuses): JsonResponse
     {
-        $data = $request->validate(['from' => ['required', 'string']]);
-        $code = strtoupper($code);
-
-        try {
-            $order = $statuses->advance($request->user(), $code, $data['from']);
-        } catch (InvalidStatusTransition $e) {
-            return redirect()->route('processing.order.show', ['code' => $code])->with('error', $e->getMessage());
+        if ($denied = $this->shiftNotStarted()) {
+            return $denied;
         }
 
-        return redirect()
-            ->route('processing.order.show', ['code' => $code])
-            ->with('status', 'Status updated to ' . Order::STATUS_LABELS[$order->status] . '.');
+        $validator = Validator::make($request->all(), [
+            'order_id' => ['required', 'string', 'max:30', 'regex:' . self::ID_PATTERN],
+            'from' => ['nullable', 'string', Rule::in(array_keys(Order::STATUS_LABELS))],
+        ]);
+
+        if ($validator->fails()) {
+            return $this->invalidId();
+        }
+
+        try {
+            $order = $statuses->advance(
+                $request->user(),
+                strtoupper($request->input('order_id')),
+                $request->input('from'),
+            );
+        } catch (ModelNotFoundException $e) {
+            return $this->notFound();
+        } catch (InvalidStatusTransition $e) {
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 409);
+        }
+
+        $label = Order::STATUS_LABELS[$order->status];
+
+        return response()->json([
+            'ok' => true,
+            'order_id' => $order->kode_pesanan,
+            'status' => $order->status,
+            'status_label' => $label,
+            'message' => "Order {$order->kode_pesanan} is now {$label}.",
+        ]);
+    }
+
+    private function shiftNotStarted(): ?JsonResponse
+    {
+        if (! session(ProcessingController::SHIFT_KEY)) {
+            return response()->json(['ok' => false, 'message' => 'Your shift has not started yet.'], 403);
+        }
+
+        return null;
+    }
+
+    private function invalidId(): JsonResponse
+    {
+        return response()->json(['ok' => false, 'message' => 'Order ID not recognised. Check the label and try again.'], 422);
+    }
+
+    private function notFound(): JsonResponse
+    {
+        return response()->json(['ok' => false, 'message' => 'Order not found. Check the label and try again.'], 404);
     }
 }
