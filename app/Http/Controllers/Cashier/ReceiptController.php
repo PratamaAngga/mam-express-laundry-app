@@ -50,8 +50,8 @@ class ReceiptController extends Controller
         $eta = $placed->copy()->addDays($o->service->estimasi_hari);
         $kgLabel = Order::kg($kg);
         $serviceName = $o->service->nama_layanan;
-        // QR berisi alamat halaman order untuk petugas processing (dibuka lewat kamera HP)
-        $qr = app(QrCodeService::class)->rects(route('processing.order.show', ['code' => $o->kode_pesanan]));
+        // QR hanya berisi kode pesanan; pemindai di halaman Work Session yang mengurus sisanya
+        $qr = app(QrCodeService::class)->rects($o->kode_pesanan);
 
         return [
             'code' => $o->kode_pesanan,
