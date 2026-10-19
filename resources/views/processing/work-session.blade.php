@@ -18,9 +18,11 @@
             </form>
         </div>
 
-        <div class="ws-wrap" id="ws-root" data-status="{{ $staff['status'] }}"
-            data-update-url="{{ route('processing.work-session.update') }}" data-csrf="{{ csrf_token() }}">
-
+        <div class="ws-wrap" id="ws-root"
+            data-update-url="{{ route('processing.work-session.update') }}"
+            data-lookup-url="{{ route('processing.work-session.lookup', ['code' => 'CODEPLACEHOLDER']) }}"
+            data-csrf="{{ csrf_token() }}">
+            
             <div class="stepper">
                 <span class="step active" data-step="1">Scan basket</span>
                 <span class="step" data-step="2">Confirm status</span>
@@ -50,8 +52,9 @@
                 <div class="info-box">
                     <x-icon name="lock" :size="18" />
                     <div>
-                        <strong>Assigned task: {{ $staff['task'] }} &rarr; Status: {{ $staff['status'] }}</strong><br>
-                        <span class="small">Set by your signed-in role. No status selection needed.</span>
+                        <strong>Status flow: {{ $staff['flow'] }}</strong><br>
+                        <span class="small">Each scan moves the order one step forward, based on its current status in the
+                            system. No status selection needed.</span>
                     </div>
                 </div>
 
@@ -85,7 +88,8 @@
                 {{-- Tahap konfirmasi --}}
                 <div id="confirm-block" hidden>
                     <h2 class="ws-confirm-title">Order <span id="confirm-id"></span> will be updated to <span
-                            class="accent">{{ $staff['status'] }}</span></h2>
+                            class="accent" id="confirm-status"></span></h2>
+                    <p class="muted" id="confirm-detail"></p>
                     <button type="button" class="btn-primary" id="update-btn"><x-icon name="check" :size="16" /> Update
                         Status</button>
                     <p class="ws-note">Nothing changes until you select Update Status.</p>
@@ -93,7 +97,7 @@
 
                 {{-- Tahap menunggu update --}}
                 <div id="updating-block" hidden>
-                    <div class="ws-updating"><span class="spinner"></span><span>Updating to {{ $staff['status'] }}…</span></div>
+                    <div class="ws-updating"><span class="spinner"></span><span>Updating to <span id="updating-status"></span>…</span></div>
                     <p class="muted">Waiting for the system to save Order <span id="updating-id"></span>. The update is not
                         complete yet.</p>
                     <button type="button" class="btn-primary" disabled>Updating Status…</button>
@@ -131,7 +135,7 @@
             @verbatim
                 (function () {
                     var root = document.getElementById('ws-root');
-                    var STATUS = root.dataset.status;
+                    var LOOKUP_URL = root.dataset.lookupUrl;
                     var UPDATE_URL = root.dataset.updateUrl;
                     var CSRF = root.dataset.csrf;
                     var ID_RE = /^[A-Z]{2,5}-\d{3,6}(-\d{3,6})?$/;
@@ -151,6 +155,9 @@
                         error: document.getElementById('ws-error'),
                         confirmBlock: document.getElementById('confirm-block'),
                         confirmId: document.getElementById('confirm-id'),
+                        confirmStatus: document.getElementById('confirm-status'),
+                        confirmDetail: document.getElementById('confirm-detail'),
+                        updatingStatus: document.getElementById('updating-status'),
                         updatingBlock: document.getElementById('updating-block'),
                         updatingId: document.getElementById('updating-id'),
                         updateBtn: document.getElementById('update-btn'),
@@ -190,6 +197,9 @@
 
                     var state = 'scan';
                     var orderId = '';
+                    var currentStatus = '';   // status pesanan di database saat discan (dikirim sebagai "from")
+                    var nextLabel = '';       // label status berikutnya dari database
+                    var lookingUp = false;
 
                     function showError(message) {
                         el.error.textContent = message;
@@ -219,7 +229,7 @@
 
                         el.banner.hidden = !(isScan && opts.after);
                         if (isScan && opts.after) {
-                            el.bannerTitle.textContent = 'Order ' + opts.orderId + ' updated to ' + STATUS + '.';
+                            el.bannerTitle.textContent = opts.message;
                         }
 
                         el.scanTitle.textContent = opts.after ? 'Ready for the next basket' : 'Ready to scan';
@@ -250,10 +260,10 @@
                         }
                     }
 
-                    // Tahap 1 -> 2: scanner mengetik ID lalu menekan Enter
+                    // Tahap 1 -> 2: scanner mengetik ID lalu menekan Enter. Status asli diambil dari database dulu.
                     function handleScan() {
                         var id = el.input.value.trim().toUpperCase();
-                        if (!id) return;
+                        if (!id || lookingUp) return;
 
                         if (!ID_RE.test(id)) {
                             showError('Order ID not recognised. Check the label and try again.');
@@ -262,13 +272,53 @@
                         }
 
                         clearError();
-                        orderId = id;
-                        el.input.value = id;
-                        el.confirmId.textContent = id;
-                        el.updatingId.textContent = id;
-                        setState('confirm');
-                    }
+                        lookingUp = true;
+                        el.input.readOnly = true;
+                        el.hint.textContent = 'Checking order…';
 
+                        fetch(LOOKUP_URL.replace('CODEPLACEHOLDER', encodeURIComponent(id)), {
+                            headers: { 'Accept': 'application/json' }
+                        })
+                            .then(function (response) {
+                                return response.json().then(function (data) {
+                                    return { ok: response.ok && data.ok, data: data };
+                                });
+                            })
+                            .then(function (result) {
+                                lookingUp = false;
+                                el.input.readOnly = false;
+                                el.hint.textContent = 'Focused · ready for input';
+
+                                if (!result.ok) {
+                                    showError(result.data.message || 'Order not found. Check the label and try again.');
+                                    el.input.select();
+                                    return;
+                                }
+                                if (!result.data.can_advance) {
+                                    showError(result.data.message || 'This order cannot be updated by you.');
+                                    el.input.select();
+                                    return;
+                                }
+
+                                orderId = result.data.order_id;
+                                currentStatus = result.data.status;
+                                nextLabel = result.data.next_label;
+                                el.input.value = orderId;
+                                el.confirmId.textContent = orderId;
+                                el.updatingId.textContent = orderId;
+                                el.confirmStatus.textContent = nextLabel;
+                                el.updatingStatus.textContent = nextLabel;
+                                el.confirmDetail.textContent = result.data.customer + ' · ' + result.data.service + ' · ' +
+                                    result.data.weight_kg + ' kg · Current status: ' + result.data.status_label;
+                                setState('confirm');
+                            })
+                            .catch(function () {
+                                lookingUp = false;
+                                el.input.readOnly = false;
+                                el.hint.textContent = 'Focused · ready for input';
+                                showError('Could not reach the server. Please try again.');
+                            });
+                    }
                     el.input.addEventListener('keydown', function (e) {
                         if (state === 'scan' && e.key === 'Enter') {
                             e.preventDefault();
@@ -298,7 +348,7 @@
                                 'Accept': 'application/json',
                                 'X-CSRF-TOKEN': CSRF
                             },
-                            body: JSON.stringify({ order_id: orderId })
+                            body: JSON.stringify({ order_id: orderId, from: currentStatus })
                         })
                             .then(function (response) {
                                 return response.json().then(function (data) {
@@ -308,7 +358,7 @@
                             .then(function (result) {
                                 finish(function () {
                                     if (result.ok) {
-                                        setState('scan', { after: true, orderId: orderId });
+                                        setState('scan', { after: true, message: result.data.message });
                                     } else {
                                         setState('confirm');
                                         showError(result.data.message || 'The update could not be completed. Please try again.');

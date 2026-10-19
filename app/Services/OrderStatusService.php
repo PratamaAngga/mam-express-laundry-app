@@ -29,6 +29,18 @@ class OrderStatusService
         return self::FLOW[$current]['to'] ?? null;
     }
 
+    public static function stepsFor(string $role): array
+    {
+        $steps = [];
+        foreach (self::FLOW as $from => $rule) {
+            if ($rule['role'] === $role) {
+                $steps[] = ['from' => $from, 'to' => $rule['to']];
+            }
+        }
+
+        return $steps;
+    }
+
     public static function roleFor(string $current): ?string
     {
         return self::FLOW[$current]['role'] ?? null;

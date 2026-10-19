@@ -20,15 +20,15 @@
             <p class="muted">You started at {{ $shift['started_at'] }}. Open your work session to scan the next basket.</p>
         @else
             <h2>Ready to start, {{ $staff['first_name'] }}?</h2>
-            <p class="muted">You're signed in as {{ $staff['role'] }} staff with the {{ $staff['task'] }} task. Your shift has
-                not started yet.</p>
+            <p class="muted">You're signed in as {{ $staff['role'] }} staff. Your shift has not started yet.</p>
         @endif
 
         <div class="info-box">
             <x-icon name="lock" :size="18" />
             <div>
-                <strong>Assigned task: {{ $staff['task'] }} &rarr; Status: {{ $staff['status'] }}</strong><br>
-                <span class="small">Set by your signed-in role. No status selection needed.</span>
+                <strong>Status flow: {{ $staff['flow'] }}</strong><br>
+                <span class="small">Each scan moves the order one step forward, based on its current status in the
+                    system. No status selection needed.</span>
             </div>
         </div>
 
