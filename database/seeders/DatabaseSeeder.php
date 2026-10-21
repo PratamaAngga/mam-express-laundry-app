@@ -125,6 +125,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ServiceSeeder::class);
+        $this->call(StockUsageSeeder::class);
         $this->call(OrderSeeder::class);
     }
 
