@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
  */
 class OrderStatusService
 {
+    public function __construct(private StockService $stock)
+    {
+    }
+
     // Jeda anti dobel-scan (detik) kalau klien belum mengirim status yang dilihat petugas
     private const COOLDOWN_SECONDS = 15;
 
@@ -111,6 +115,11 @@ class OrderStatusService
                 'status_baru'     => $next,
                 'waktu_perubahan' => $now,
             ]);
+
+            // Cucian mulai dicuci: potong stok bahan baku sesuai berat (di transaksi yang sama)
+            if ($next === Order::STATUS_PROCESSED) {
+                $this->stock->consumeForOrder($order, $actor);
+            }
 
             return $order;
         });
