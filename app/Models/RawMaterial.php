@@ -14,13 +14,14 @@ class RawMaterial extends Model
     // The table only has updated_at (no created_at)
     const CREATED_AT = null;
 
-    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier'];
+    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier', 'pemakaian_per_kg', 'id_tambahan_pemicu'];
 
     protected function casts(): array
     {
         return [
             'stok_saat_ini' => 'float',
             'stok_minimum'  => 'float',
+            'pemakaian_per_kg' => 'float',
         ];
     }
 
@@ -48,7 +49,7 @@ class RawMaterial extends Model
     /** 2 -> "2", 0.5 -> "0,5", 1000 -> "1.000" */
     public static function formatNumber(float|int|string $value): string
     {
-        $text = number_format((float) $value, 2, ',', '.');
+        $text = number_format((float) $value, 3, ',', '.');
 
         return rtrim(rtrim($text, '0'), ',');
     }
