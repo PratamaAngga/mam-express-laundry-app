@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Service;
 use App\Services\OrderService;
 use App\Services\QrCodeService;
+use App\Services\WhatsApp\WhatsAppService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -64,6 +65,13 @@ class OrderController extends Controller
             'service_id' => (int) $data['service'],
             'freshener' => $request->boolean('freshener'),
         ]);
+
+        // Invoice WhatsApp lewat antrian; kegagalan di sini tidak boleh membatalkan pesanan yang sudah tersimpan
+        try {
+            app(WhatsAppService::class)->sendInvoice($saved);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $service = $saved->service;
         $customer = $saved->customer;

@@ -7,6 +7,7 @@ use App\Models\RawMaterial;
 use App\Models\RestockDetail;
 use App\Models\RestockOrder;
 use App\Models\Supplier;
+use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -104,7 +105,12 @@ class RestockController extends Controller
             return $order;
         });
 
-        // TODO (backend): send the WhatsApp invoice to the supplier (FR-14) via notifikasi_wa
+        // Permintaan restock dikirim ke WhatsApp supplier (FR-14) lewat antrian; kegagalan tidak membatalkan restock
+        try {
+            app(WhatsAppService::class)->sendRestockRequest($order->load(['supplier', 'details.material']));
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return redirect()
             ->route('owner.restock.index', ['order' => $order->kode_restock])
