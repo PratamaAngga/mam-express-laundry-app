@@ -15,7 +15,8 @@
     <div class="alert">{{ session('success') }}</div>
 @endif
 
-<form id="order-form" action="{{ route('cashier.orders.store') }}" method="POST" class="grid" data-freshener="{{ $freshenerPrice }}">
+<form id="order-form" action="{{ route('cashier.orders.store') }}" method="POST" class="grid" data-freshener="{{ $freshenerPrice }}"
+      data-lookup-url="{{ route('cashier.customers.lookup') }}">
     @csrf
 
     <div class="col-left">
