@@ -12,14 +12,60 @@
     const weight = document.getElementById('weight');
     const fresh = document.getElementById('freshener');
 
-    // DATA CONTOH. Nanti diganti dengan fetch() ke endpoint pelanggan buatan backend.
-    const dummyCustomers = {
-        '085856170561': { name: 'Siti Rahma', meta: 'Customer since May 2026 • 12 orders' },
-    };
-
     const rupiah = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
     const digits = (s) => s.replace(/\D/g, '');
     const formatPhone = (d) => d.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+
+    const lookupUrl = form.dataset.lookupUrl;
+    let lookupTimer = null;
+    let autoFilled = false; // nama diisi otomatis dari data pelanggan
+    let lastLookup = '';    // nomor yang terakhir dicek, supaya jawaban yang sudah basi diabaikan
+
+    function resetCustomer() {
+        nameInput.readOnly = false;
+        if (autoFilled) {
+            nameInput.value = '';
+            autoFilled = false;
+        }
+        customerMeta.textContent = '';
+        waHint.textContent = '';
+        waHint.className = 'hint';
+    }
+
+    function showFound(customer) {
+        nameInput.value = customer.name;
+        nameInput.readOnly = true;
+        autoFilled = true;
+        customerMeta.textContent = customer.meta || '';
+        waHint.textContent = 'Customer found. The name is filled in automatically.';
+        waHint.className = 'hint ok';
+    }
+
+    function showNotFound() {
+        resetCustomer();
+        waHint.textContent = 'Number not registered yet. Enter the name and proceed with creating the order to register the customer.';
+    }
+
+    // Tanya server apakah nomor ini sudah terdaftar (data pelanggan ada di database)
+    function lookupCustomer(d) {
+        if (!lookupUrl) { return; }
+        lastLookup = d;
+
+        fetch(lookupUrl + '?phone=' + encodeURIComponent(d), {
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+        })
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .then(function (data) {
+                if (lastLookup !== d) { return; } // nomor sudah berubah, abaikan jawaban lama
+                if (data && data.found) { showFound(data); }
+                else if (data) { showNotFound(); }
+                else { resetCustomer(); } // gagal cek: jangan menyatakan "belum terdaftar"
+            })
+            .catch(function () {
+                if (lastLookup === d) { resetCustomer(); }
+            });
+    }
 
     function checkCustomer() {
         const d = digits(wa.value);
@@ -29,18 +75,12 @@
         document.getElementById('wa-check').hidden = !valid;
         waValidNumber.textContent = formatPhone(d);
 
-        const found = dummyCustomers[d];
-        if (found) {
-            nameInput.value = found.name;
-            nameInput.readOnly = true;
-            customerMeta.textContent = found.meta;
-            waHint.textContent = 'Customer found. The name is filled in automatically.';
-            waHint.className = 'hint ok';
-        } else {
-            nameInput.readOnly = false;
-            customerMeta.textContent = '';
-            waHint.textContent = d.length > 5 ? 'Number not registered yet. Enter a name or click + New Customer.' : '';
-            waHint.className = 'hint';
+        clearTimeout(lookupTimer);
+        resetCustomer();
+
+        if (valid) {
+            // tunggu kasir berhenti mengetik sebentar, baru cek ke server
+            lookupTimer = setTimeout(function () { lookupCustomer(d); }, 300);
         }
     }
 
