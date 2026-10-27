@@ -56,6 +56,30 @@ class CustomerController extends Controller
             ->with('success', $data['full_name'] . ' has been added to the customer list.');
     }
 
+    // Cek satu nomor WhatsApp (dipanggil dari form New Order): sudah terdaftar atau belum
+    public function lookup(Request $request)
+    {
+        $phone = OrderService::normalizePhone((string) $request->query('phone', ''));
+
+        if (! preg_match('/^08\d{8,11}$/', $phone)) {
+            return response()->json(['found' => false]);
+        }
+
+        $customer = Customer::withCount('orders')->where('no_telepon', $phone)->first();
+
+        if (! $customer) {
+            return response()->json(['found' => false]);
+        }
+
+        $since = $customer->created_at ? 'Customer since ' . $customer->created_at->format('F Y') . ' • ' : '';
+
+        return response()->json([
+            'found' => true,
+            'name' => $customer->nama,
+            'meta' => $since . $customer->orders_count . ($customer->orders_count === 1 ? ' order' : ' orders'),
+        ]);
+    }
+
     // Semua pelanggan + jumlah pesanan + kunjungan terakhir (pesanan terakhir, atau tanggal didaftarkan)
     private function all(): array
     {
