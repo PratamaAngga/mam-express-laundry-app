@@ -43,7 +43,7 @@
 
     function showNotFound() {
         resetCustomer();
-        waHint.textContent = 'Number not registered yet. Enter a name or click + New Customer.';
+        waHint.textContent = 'Number not registered yet. Enter the name and proceed with creating the order to register the customer.';
     }
 
     // Tanya server apakah nomor ini sudah terdaftar (data pelanggan ada di database)
