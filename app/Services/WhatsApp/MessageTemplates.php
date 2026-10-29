@@ -10,26 +10,26 @@ use Illuminate\Support\Str;
 /** Isi pesan WhatsApp (bahasa Indonesia). Semua teks pesan ada di sini supaya mudah direvisi. */
 class MessageTemplates
 {
+    // Invoice pesanan: rincian layanan, harga, berat, waktu pesanan dibuat, dan kode pesanan (sesuai proposal)
     public static function invoice(Order $order): string
     {
         $shop = config('whatsapp.shop');
-        $firstName = Str::of($order->customer->nama)->trim()->before(' ')->toString();
-        $addons = $order->additionalServices;
-        $eta = $order->waktu_pesanan->copy()->addDays($order->service->estimasi_hari);
+        $eta = self::eta($order);
 
         $lines = [
             '*' . $shop['name'] . '*',
             $shop['address'],
             '',
-            'Halo ' . $firstName . ', pesanan Anda sudah kami terima ✅',
+            'Halo ' . self::firstName($order) . ', pesanan Anda sudah kami terima ✅',
             '',
             'Kode pesanan: ' . $order->kode_pesanan,
-            'Layanan: ' . $order->service->nama_layanan,
+            'Waktu pesanan: ' . self::date($order->waktu_pesanan),
+            'Layanan: ' . $order->service->nama_layanan . ' (' . self::rupiah($order->service->harga_per_kg) . '/kg)',
             'Berat: ' . Order::kg($order->berat_kg) . ' kg',
         ];
 
-        if ($addons->isNotEmpty()) {
-            $lines[] = 'Tambahan: ' . $addons->pluck('nama_tambahan')->implode(', ');
+        foreach ($order->additionalServices as $addon) {
+            $lines[] = 'Tambahan: ' . $addon->nama_tambahan . ' (' . self::rupiah($addon->pivot->harga_saat_ini) . ')';
         }
 
         $lines[] = 'Total: ' . self::rupiah($order->total_harga) . ' (' . ($order->is_paid ? 'lunas' : 'belum lunas') . ')';
@@ -41,6 +41,35 @@ class MessageTemplates
         return implode("\n", $lines);
     }
 
+    // Kabar perubahan status ke pelanggan (FR-10). Status awal sudah diwakili invoice, jadi tidak ada pesan untuk itu.
+    public static function statusUpdate(Order $order): ?string
+    {
+        $shop = config('whatsapp.shop');
+        $name = self::firstName($order);
+
+        $body = match ($order->status) {
+            Order::STATUS_PROCESSED => [
+                'Halo ' . $name . ', cucian Anda (kode ' . $order->kode_pesanan . ') sekarang sedang kami proses 🧺',
+                'Estimasi selesai: ' . self::date(self::eta($order)),
+            ],
+            Order::STATUS_PACKED => [
+                'Halo ' . $name . ', cucian Anda (kode ' . $order->kode_pesanan . ') sudah selesai dan siap diambil ✅',
+                'Silakan ambil di ' . $shop['address'] . '. Kami buka 24 jam.',
+            ],
+            Order::STATUS_DONE => [
+                'Halo ' . $name . ', pesanan ' . $order->kode_pesanan . ' sudah diserahkan. Terima kasih telah mencuci di ' . $shop['name'] . ' 🙏',
+            ],
+            default => null,
+        };
+
+        if ($body === null) {
+            return null;
+        }
+
+        return implode("\n", ['*' . $shop['name'] . '*', '', ...$body, '', '_Pesan otomatis, mohon tidak dibalas._']);
+    }
+
+    // Permintaan restock ke supplier (FR-14), lengkap dengan tautan ke daftar permintaan restock
     public static function restockRequest(RestockOrder $restock): string
     {
         $shop = config('whatsapp.shop');
@@ -70,7 +99,31 @@ class MessageTemplates
 
         $lines[] = 'Alamat pengiriman: ' . $shop['address'];
         $lines[] = '';
-        $lines[] = 'Mohon konfirmasi pesanan ini lewat aplikasi (login sebagai supplier). Terima kasih 🙏';
+        $lines[] = 'Lihat dan konfirmasi permintaan ini (login sebagai supplier):';
+        $lines[] = route('supplier.restock.index');
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * Peringatan stok menyentuh batas minimum, ke owner (FR-12).
+     *
+     * @param  array<int, array{nama_bahan: string, sisa: float, minimum: float, satuan: string}>  $items
+     */
+    public static function lowStock(array $items): string
+    {
+        $shop = config('whatsapp.shop');
+
+        $lines = ['⚠️ *Stok menipis - ' . $shop['name'] . '*', ''];
+
+        foreach ($items as $item) {
+            $lines[] = '• ' . $item['nama_bahan'] . ': sisa ' . RawMaterial::formatNumber($item['sisa']) . ' ' . $item['satuan']
+                . ' (batas minimum ' . RawMaterial::formatNumber($item['minimum']) . ' ' . $item['satuan'] . ')';
+        }
+
+        $lines[] = '';
+        $lines[] = 'Segera ajukan restock:';
+        $lines[] = route('owner.restock.create');
 
         return implode("\n", $lines);
     }
@@ -86,5 +139,15 @@ class MessageTemplates
         $months = [1 => 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
         return $date->format('j') . ' ' . $months[(int) $date->format('n')] . ' ' . $date->format('Y') . ', ' . $date->format('H.i');
+    }
+
+    private static function firstName(Order $order): string
+    {
+        return Str::of($order->customer->nama)->trim()->before(' ')->toString();
+    }
+
+    private static function eta(Order $order): \DateTimeInterface
+    {
+        return $order->waktu_pesanan->copy()->addDays($order->service->estimasi_hari);
     }
 }
