@@ -5,6 +5,7 @@ namespace App\Services\WhatsApp;
 use App\Jobs\SendWhatsAppMessage;
 use App\Models\Order;
 use App\Models\RestockOrder;
+use App\Models\User;
 use App\Models\WhatsappMessage;
 use RuntimeException;
 
@@ -33,6 +34,38 @@ class WhatsAppService
             MessageTemplates::invoice($order),
             orderId: $order->id_pesanan,
         );
+    }
+
+    // Kabar perubahan status ke pelanggan (diproses, siap diambil, selesai)
+    public function sendStatusUpdate(Order $order): ?WhatsappMessage
+    {
+        $order->loadMissing(['customer', 'service']);
+
+        $text = MessageTemplates::statusUpdate($order);
+        $to = $this->digits($order->customer->no_telepon);
+
+        if ($text === null || $to === '') {
+            return null;
+        }
+
+        return $this->queue(WhatsappMessage::TIPE_STATUS_PELANGGAN, $to, $text, orderId: $order->id_pesanan);
+    }
+
+    /**
+     * Peringatan stok menyentuh batas minimum ke WA owner (satu pesan berisi semua bahan yang baru menyentuh batas).
+     *
+     * @param  array<int, array{nama_bahan: string, sisa: float, minimum: float, satuan: string}>  $items
+     */
+    public function sendLowStockWarning(array $items): ?WhatsappMessage
+    {
+        $owner = User::where('role', 'owner_admin')->where('status_aktif', true)->orderBy('id_user')->first();
+        $to = $this->digits($owner?->no_hp);
+
+        if ($items === [] || $to === '') {
+            return null;
+        }
+
+        return $this->queue(WhatsappMessage::TIPE_PERINGATAN_STOK, $to, MessageTemplates::lowStock($items));
     }
 
     // Permintaan restock ke supplier saat owner menyimpan formulir

@@ -35,15 +35,15 @@ class RawMaterial extends Model
         return $this->hasMany(StockLog::class, 'id_bahan', 'id_bahan');
     }
 
-    /** Stock below the minimum level (FR-12). */
+    /** Stock at or below the minimum level (FR-12). */
     public function scopeLowStock($query)
     {
-        return $query->whereColumn('stok_saat_ini', '<', 'stok_minimum');
+        return $query->whereColumn('stok_saat_ini', '<=', 'stok_minimum');
     }
 
     public function getIsLowAttribute(): bool
     {
-        return $this->stok_saat_ini < $this->stok_minimum;
+        return $this->stok_saat_ini <= $this->stok_minimum;
     }
 
     /** 2 -> "2", 0.5 -> "0,5", 1000 -> "1.000" */

@@ -6,7 +6,9 @@ use App\Exceptions\InvalidStatusTransition;
 use App\Models\Order;
 use App\Models\OrderStatusHistory;
 use App\Models\User;
+use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Aturan perpindahan status pesanan (milik backend).
@@ -14,7 +16,7 @@ use Illuminate\Support\Facades\DB;
  */
 class OrderStatusService
 {
-    public function __construct(private StockService $stock)
+    public function __construct(private StockService $stock, private WhatsAppService $whatsApp)
     {
     }
 
@@ -80,7 +82,9 @@ class OrderStatusService
      */
     public function advance(User $actor, string $kode, ?string $expectedFrom = null): Order
     {
-        return DB::transaction(function () use ($actor, $kode, $expectedFrom) {
+        $lowStock = [];
+
+        $order = DB::transaction(function () use ($actor, $kode, $expectedFrom, &$lowStock) {
             // lockForUpdate: kunci baris selama transaksi, supaya dua permintaan tidak saling menimpa
             $order = Order::where('kode_pesanan', $kode)->lockForUpdate()->firstOrFail();
 
@@ -118,11 +122,24 @@ class OrderStatusService
 
             // Cucian mulai dicuci: potong stok bahan baku sesuai berat (di transaksi yang sama)
             if ($next === Order::STATUS_PROCESSED) {
-                $this->stock->consumeForOrder($order, $actor);
+                $lowStock = $this->stock->consumeForOrder($order, $actor);
             }
 
             return $order;
         });
+
+        // WhatsApp dikirim SETELAH transaksi selesai, jadi masalah WhatsApp tidak pernah membatalkan perubahan status
+        try {
+            $this->whatsApp->sendStatusUpdate($order);
+
+            if ($lowStock !== []) {
+                $this->whatsApp->sendLowStockWarning($lowStock);
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        return $order;
     }
 
     private function updatedRecentlyBy(User $actor, Order $order): bool
