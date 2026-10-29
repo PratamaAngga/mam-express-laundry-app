@@ -21,10 +21,10 @@ class StockService
         return round($kg * $ratePerKg, 3);
     }
 
-    // Sama dengan definisi di RawMaterial::isLow: stok di bawah batas minimum
+    // Sama dengan definisi di RawMaterial::isLow: stok yang menyentuh atau di bawah batas minimum (FR-12)
     public static function isLow(float $stock, float $minimum): bool
     {
-        return $stock < $minimum;
+        return $stock <= $minimum;
     }
 
     /** Stok baru saja "menyeberang" dari aman ke di bawah batas (peringatan hanya dikirim saat ini). */
@@ -36,9 +36,14 @@ class StockService
     /**
      * Potong stok untuk satu pesanan. Dipanggil dari dalam transaksi perubahan status,
      * jadi kalau gagal, status pesanan ikut batal. Aman dipanggil dua kali (tidak memotong ganda).
+     *
+     * @return array<int, array{nama_bahan: string, sisa: float, minimum: float, satuan: string}>
+     *         bahan yang BARU menyentuh batas minimum (untuk dikirimi peringatan WhatsApp setelah transaksi selesai)
      */
-    public function consumeForOrder(Order $order, User $actor): void
+    public function consumeForOrder(Order $order, User $actor): array
     {
+        $low = [];
+
         $order->loadMissing('additionalServices');
         $addonIds = $order->additionalServices->pluck('id_tambahan')->all();
         $kg = (float) $order->berat_kg;
@@ -89,8 +94,17 @@ class StockService
 
             if (self::crossedIntoLow($before, $after, (float) $material->stok_minimum)) {
                 $this->notifyLowStock($material, $after);
+
+                $low[] = [
+                    'nama_bahan' => $material->nama_bahan,
+                    'sisa'       => $after,
+                    'minimum'    => (float) $material->stok_minimum,
+                    'satuan'     => $material->satuan,
+                ];
             }
         }
+
+        return $low;
     }
 
     private function notifyLowStock(RawMaterial $material, float $remaining): void
@@ -110,6 +124,5 @@ class StockService
                 . " {$unit} (batas minimum " . RawMaterial::formatNumber($material->stok_minimum) . " {$unit}). Segera ajukan restock.",
         ]);
 
-        // TODO (Modul WhatsApp): kirim juga peringatan ini ke WA owner lewat antrian
     }
 }
