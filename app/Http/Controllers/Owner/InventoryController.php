@@ -16,7 +16,7 @@ class InventoryController extends Controller
     {
         // Low-stock items first, then most recently updated
         $materials = RawMaterial::with('supplier')
-            ->orderByRaw('(stok_saat_ini < stok_minimum) DESC')
+            ->orderByRaw('(stok_saat_ini <= stok_minimum) DESC')
             ->orderByDesc('updated_at')
             ->get();
 
