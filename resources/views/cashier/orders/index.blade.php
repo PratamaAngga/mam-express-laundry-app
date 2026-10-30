@@ -78,18 +78,18 @@
                         <td>{{ $order['service'] }}</td>
                         <td><span class="st st-{{ $order['status'] }}">{{ $statuses[$order['status']] }}</span></td>
                         <td>
-                            @if ($order['status'] === \App\Models\Order::STATUS_PACKED)
-                                {{-- Cucian siap diambil: kasir menyerahkannya ke pelanggan --}}
-                                <form method="POST" action="{{ route('cashier.orders.complete', ['code' => $order['code']]) }}"
-                                    class="inline-form" onsubmit="return confirm('Mark this order as picked up by the customer?')">
-                                    @csrf
-                                    <input type="hidden" name="from" value="{{ $order['status'] }}">
-                                    <button type="submit" class="btn-outline btn-sm">Mark as picked up</button>
-                                </form>
-                            @else
-                                {{-- TODO: arahkan ke halaman detail order --}}
-                                <a href="#" class="action">View details <x-icon name="arrow-right" :size="13" /></a>
-                            @endif
+                            <div class="row-actions">
+                                <a href="{{ route('cashier.orders.show', ['code' => $order['code']]) }}" class="action">View details <x-icon name="arrow-right" :size="13" /></a>
+                                @if ($order['status'] === \App\Models\Order::STATUS_PACKED)
+                                    {{-- Cucian siap diambil: kasir menyerahkannya ke pelanggan --}}
+                                    <form method="POST" action="{{ route('cashier.orders.complete', ['code' => $order['code']]) }}"
+                                        class="inline-form" onsubmit="return confirm('Mark this order as picked up by the customer?')">
+                                        @csrf
+                                        <input type="hidden" name="from" value="{{ $order['status'] }}">
+                                        <button type="submit" class="btn-outline btn-sm">Mark as picked up</button>
+                                    </form>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @endforeach

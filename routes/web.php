@@ -77,6 +77,8 @@ Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/success', [OrderController::class, 'success'])->name('orders.success');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    // Order List -> View details (harus setelah /orders/create dan /orders/success)
+    Route::get('/orders/{code}', [OrderController::class, 'show'])->where('code', '[A-Za-z0-9-]+')->name('orders.show');
     // Pelanggan mengambil cucian: kasir menandai pesanan Selesai (FR-09)
     Route::post('/orders/{code}/complete', [OrderController::class, 'complete'])->where('code', '[A-Za-z0-9-]+')->name('orders.complete');
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
