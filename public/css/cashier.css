@@ -1208,3 +1208,13 @@ button.logout {
     font: inherit;
 }
 button.logout:hover { color: var(--text, inherit); }
+
+/* ===== Aksi kasir di Order List ===== */
+.alert-error {
+    background: #fdecea;
+    color: #8f1d14;
+}
+.inline-form {
+    display: inline;
+    margin: 0;
+}

@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
+use App\Exceptions\InvalidStatusTransition;
 use App\Models\Order;
 use App\Models\Service;
 use App\Services\OrderService;
+use App\Services\OrderStatusService;
 use App\Services\QrCodeService;
 use App\Services\WhatsApp\WhatsAppService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -160,6 +163,23 @@ class OrderController extends Controller
                 'done' => $count([Order::STATUS_DONE]),
             ],
         ]);
+    }
+
+    // Tombol "Mark as picked up" di Order List: pesanan Dikemas dan Siap Diambil menjadi Selesai.
+    // Aturan (hanya kasir, hanya dari status siap diambil, tercatat di riwayat) ada di OrderStatusService.
+    public function complete(Request $request, OrderStatusService $statuses, string $code)
+    {
+        $data = $request->validate(['from' => ['required', 'string']]);
+
+        try {
+            $order = $statuses->advance($request->user(), strtoupper($code), $data['from']);
+        } catch (ModelNotFoundException $e) {
+            return back()->with('error', 'Order not found.');
+        } catch (InvalidStatusTransition $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('status', "Order {$order->kode_pesanan} marked as picked up.");
     }
 
     // 10:42 a.m. / 3:05 p.m.

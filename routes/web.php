@@ -77,6 +77,8 @@ Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/success', [OrderController::class, 'success'])->name('orders.success');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    // Pelanggan mengambil cucian: kasir menandai pesanan Selesai (FR-09)
+    Route::post('/orders/{code}/complete', [OrderController::class, 'complete'])->where('code', '[A-Za-z0-9-]+')->name('orders.complete');
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
     // Dicek tiap kali kasir mengetik nomor di form pesanan; dibatasi supaya nomor tidak bisa ditebak beruntun
