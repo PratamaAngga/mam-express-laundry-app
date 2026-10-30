@@ -66,6 +66,12 @@ a {
     flex-direction: column;
     gap: 14px;
     flex-shrink: 0;
+    /* tetap di layar saat isi halaman di-scroll */
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    align-self: flex-start;
+    overflow-y: auto;
 }
 
 .brand {
