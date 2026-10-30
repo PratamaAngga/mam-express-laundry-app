@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Exceptions\InvalidStatusTransition;
 use App\Models\Order;
 use App\Models\Service;
+use App\Models\WhatsappMessage;
 use App\Services\OrderService;
 use App\Services\OrderStatusService;
 use App\Services\QrCodeService;
@@ -13,6 +14,7 @@ use App\Services\WhatsApp\WhatsAppService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class OrderController extends Controller
@@ -162,6 +164,101 @@ class OrderController extends Controller
                 'ready' => $count([Order::STATUS_PACKED]),
                 'done' => $count([Order::STATUS_DONE]),
             ],
+        ]);
+    }
+
+    // Halaman View details dari Order List: semua yang perlu kasir untuk menjawab pertanyaan pelanggan
+    public function show(string $code)
+    {
+        $order = Order::with(['customer', 'service', 'cashier', 'additionalServices', 'histories.user', 'whatsappMessages'])
+            ->where('kode_pesanan', strtoupper($code))
+            ->firstOrFail();
+
+        $addon = $order->additionalServices->first();
+        $addonTotal = $addon ? (float) $addon->pivot->harga_saat_ini : 0.0;
+        $total = (float) $order->total_harga;
+        $placed = $order->waktu_pesanan;
+        $eta = $placed->copy()->addDays($order->service->estimasi_hari);
+        $isDone = $order->status === Order::STATUS_DONE;
+
+        // Linimasa: satu langkah per status. Pesanan lama (dari seeder) bisa tanpa baris riwayat,
+        // jadi langkah yang sudah lewat tetap ditandai tercapai walau waktunya tidak diketahui.
+        $keys = array_keys(Order::STATUS_LABELS);
+        $currentIndex = array_search($order->status, $keys, true);
+        $histories = $order->histories->sortBy(fn ($h) => [$h->waktu_perubahan, $h->id_riwayat])->values();
+
+        $timeline = [];
+        foreach ($keys as $i => $key) {
+            $entry = $histories->firstWhere('status_baru', $key);
+            $when = $entry?->waktu_perubahan;
+            $by = $entry?->user?->nama;
+
+            // Langkah pertama = pesanan dibuat; langkah terakhir bisa jatuh kembali ke waktu_selesai
+            if ($i === 0) {
+                $when ??= $placed;
+                $by ??= $order->cashier?->nama;
+            } elseif ($key === Order::STATUS_DONE) {
+                $when ??= $order->waktu_selesai;
+            }
+
+            $timeline[] = [
+                'label' => Order::STATUS_LABELS[$key],
+                'reached' => $i <= $currentIndex,
+                'current' => $i === $currentIndex,
+                'time' => $when?->format('j M Y, H.i'),
+                'by' => $by,
+            ];
+        }
+
+        // Riwayat pesan WhatsApp ke pelanggan (invoice dan kabar status), terbaru di atas
+        $messages = $order->whatsappMessages
+            ->whereIn('tipe', [WhatsappMessage::TIPE_INVOICE_PELANGGAN, WhatsappMessage::TIPE_STATUS_PELANGGAN])
+            ->sortByDesc('id_notifikasi')
+            ->map(fn (WhatsappMessage $m) => [
+                'kind' => $m->tipe === WhatsappMessage::TIPE_INVOICE_PELANGGAN ? 'Invoice' : 'Status update',
+                'state' => $m->status_kirim,
+                'state_label' => match ($m->status_kirim) {
+                    WhatsappMessage::TERKIRIM => 'Sent',
+                    WhatsappMessage::GAGAL => 'Failed',
+                    WhatsappMessage::SIMULASI => 'Simulated',
+                    default => 'Queued',
+                },
+                'time' => $m->waktu_kirim?->format('j M Y, H.i'),
+                'text' => Str::limit($m->isi_pesan, 160),
+                'reason' => $m->status_kirim === WhatsappMessage::GAGAL ? $m->alasan_gagal : null,
+            ])
+            ->values()
+            ->all();
+
+        $waNumber = '62' . substr(OrderService::normalizePhone($order->customer->no_telepon), 1);
+
+        return view('cashier.orders.show', [
+            'order' => [
+                'code' => $order->kode_pesanan,
+                'status' => $order->status,
+                'status_label' => $order->status_label,
+                'posted_at' => $placed->format('j M Y, H.i'),
+                'cashier' => $order->cashier?->nama ?? '-',
+                'customer_name' => $order->customer->nama,
+                'phone' => OrderService::formatPhone($order->customer->no_telepon),
+                'wa_url' => 'https://wa.me/' . $waNumber,
+                'customer_orders' => $order->customer->orders()->count(),
+                'service_name' => $order->service->nama_layanan,
+                'price_per_kg' => Order::rupiah($order->service->harga_per_kg),
+                'weight' => Order::kg($order->berat_kg),
+                'service_total' => Order::rupiah($total - $addonTotal),
+                'freshener' => (bool) $addon,
+                'freshener_total' => Order::rupiah($addonTotal),
+                'total' => Order::rupiah($total),
+                'paid' => $order->is_paid,
+                'eta' => $eta->format('j M Y, H.i'),
+                'overdue' => ! $isDone && $eta->isPast(),
+                'completed_at' => $order->waktu_selesai?->format('j M Y, H.i'),
+                'can_complete' => OrderStatusService::allowed('kasir', $order->status),
+                'blocked_reason' => OrderStatusService::blockedReason('kasir', $order->status),
+            ],
+            'timeline' => $timeline,
+            'messages' => $messages,
         ]);
     }
 
