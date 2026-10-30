@@ -47,6 +47,8 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
 
     // Raw Material Inventory
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    // Edit minimum stock (pop-up di tabel inventory)
+    Route::patch('/inventory/{material}/minimum', [InventoryController::class, 'updateMinimum'])->whereNumber('material')->name('inventory.minimum');
 
     // Restock Supplier
     Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
