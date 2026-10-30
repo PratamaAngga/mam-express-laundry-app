@@ -71,8 +71,7 @@
                         <td>{{ $order['service'] }}</td>
                         <td><span class="st st-{{ $order['status'] }}">{{ $statuses[$order['status']] }}</span></td>
                         <td>
-                            {{-- TODO: arahkan ke halaman detail order --}}
-                            <a href="#" class="action">View details <x-icon name="arrow-right" :size="13" /></a>
+                            <a href="{{ route('cashier.orders.show', $order['code']) }}" class="action">View details <x-icon name="arrow-right" :size="13" /></a>
                         </td>
                     </tr>
                 @endforeach

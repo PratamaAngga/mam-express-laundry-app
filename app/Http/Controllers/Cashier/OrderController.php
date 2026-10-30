@@ -8,6 +8,8 @@ use App\Models\Service;
 use App\Services\OrderService;
 use App\Services\QrCodeService;
 use App\Services\WhatsApp\WhatsAppService;
+use App\Exceptions\InvalidStatusTransition;
+use App\Services\OrderStatusService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -160,6 +162,86 @@ class OrderController extends Controller
                 'done' => $count([Order::STATUS_DONE]),
             ],
         ]);
+    }
+
+    // Order List -> View details page
+    public function show(string $code)
+    {
+        $order = Order::with(['customer', 'service', 'cashier', 'additionalServices', 'histories.user'])
+            ->where('kode_pesanan', $code)
+            ->firstOrFail();
+
+        $addon = $order->additionalServices->first();
+        $addonTotal = $addon ? (float) $addon->pivot->harga_saat_ini : 0.0;
+        $total = (float) $order->total_harga;
+        $placed = $order->waktu_pesanan;
+        $eta = $placed->copy()->addDays($order->service->estimasi_hari);
+        $isDone = $order->status === Order::STATUS_DONE;
+
+        // Timeline: one step per status. Older orders (from the seeder) may have no history rows,
+        // so steps already passed are still marked as reached even if their time is unknown.
+        $keys = array_keys(Order::STATUS_LABELS);
+        $currentIndex = array_search($order->status, $keys, true);
+        $histories = $order->histories->sortBy(fn ($h) => [$h->waktu_perubahan, $h->id_riwayat])->values();
+
+        $timeline = [];
+        foreach ($keys as $i => $key) {
+            $entry = $histories->firstWhere('status_baru', $key);
+            $when = $entry?->waktu_perubahan ?? ($i === 0 ? $placed : null);
+
+            $timeline[] = [
+                'label' => Order::STATUS_LABELS[$key],
+                'reached' => $i <= $currentIndex,
+                'current' => $i === $currentIndex,
+                'time' => $when ? $when->format('j M Y, H.i') : null,
+                'by' => $entry?->user?->nama,
+            ];
+        }
+
+        $digits = preg_replace('/\D/', '', $order->customer->no_telepon);
+        $waNumber = str_starts_with($digits, '0') ? '62' . substr($digits, 1) : $digits;
+
+        return view('cashier.orders.show', [
+            'order' => [
+                'code' => $order->kode_pesanan,
+                'status' => $order->status,
+                'status_label' => $order->status_label,
+                'posted_at' => $placed->format('j M Y, H.i'),
+                'cashier' => $order->cashier?->nama ?? '-',
+                'customer_name' => $order->customer->nama,
+                'phone' => OrderService::formatPhone($order->customer->no_telepon),
+                'wa_url' => 'https://wa.me/' . $waNumber,
+                'customer_orders' => $order->customer->orders()->count(),
+                'service_name' => $order->service->nama_layanan,
+                'price_per_kg' => Order::rupiah($order->service->harga_per_kg),
+                'weight' => Order::kg($order->berat_kg),
+                'service_total' => Order::rupiah($total - $addonTotal),
+                'freshener' => (bool) $addon,
+                'freshener_total' => Order::rupiah($addonTotal),
+                'total' => Order::rupiah($total),
+                'paid' => $order->is_paid,
+                'eta' => $eta->format('j M Y, H.i'),
+                'overdue' => ! $isDone && $eta->isPast(),
+                'completed_at' => $order->waktu_selesai?->format('j M Y, H.i'),
+                'can_complete' => OrderStatusService::allowed('kasir', $order->status),
+                'blocked_reason' => OrderStatusService::blockedReason('kasir', $order->status),
+            ],
+            'timeline' => $timeline,
+        ]);
+    }
+
+    // "Mark as picked up" button: dikemas_siap_diambil -> selesai (cashier only, via OrderStatusService)
+    public function complete(string $code, OrderStatusService $statuses)
+    {
+        try {
+            // Pass the status the cashier sees on screen, as a guard in case it has already changed.
+            $statuses->advance(auth()->user(), $code, Order::STATUS_PACKED);
+        } catch (InvalidStatusTransition $e) {
+            return redirect()->route('cashier.orders.show', $code)->withErrors(['status' => $e->getMessage()]);
+        }
+
+        return redirect()->route('cashier.orders.show', $code)
+            ->with('success', "Order {$code} marked as picked up.");
     }
 
     // 10:42 a.m. / 3:05 p.m.
