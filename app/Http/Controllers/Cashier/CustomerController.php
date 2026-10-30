@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cashier;
 
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
+use App\Models\Order;
 use App\Services\OrderService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -56,6 +57,47 @@ class CustomerController extends Controller
             ->with('success', $data['full_name'] . ' has been added to the customer list.');
     }
 
+    // Halaman Customer -> History: ringkasan dan semua pesanan satu pelanggan (terbaru di atas)
+    public function history(Customer $customer)
+    {
+        $orders = $customer->orders()
+            ->with('service')
+            ->orderByDesc('waktu_pesanan')
+            ->orderByDesc('id_pesanan')
+            ->get();
+
+        $rows = $orders->map(fn (Order $o) => [
+            'code' => $o->kode_pesanan,
+            'date' => $o->waktu_pesanan->format('j M Y'),
+            'time' => $o->waktu_pesanan->format('H.i'),
+            'service' => $o->service->nama_layanan,
+            'weight' => Order::kg($o->berat_kg),
+            'total' => Order::rupiah($o->total_harga),
+            'paid' => $o->is_paid,
+            'status' => $o->status,
+        ])->all();
+
+        $waNumber = '62' . substr(OrderService::normalizePhone($customer->no_telepon), 1);
+
+        return view('cashier.customers.history', [
+            'customer' => [
+                'name' => $customer->nama,
+                'phone' => OrderService::formatPhone($customer->no_telepon),
+                'since' => $customer->created_at?->format('F Y'),
+                'wa_url' => 'https://wa.me/' . $waNumber,
+            ],
+            'summary' => [
+                'orders' => $orders->count(),
+                'spent' => Order::rupiah($orders->sum('total_harga')),
+                'active' => $orders->where('status', '!=', Order::STATUS_DONE)->count(),
+                // Pesanan belum lunas: tagihan yang masih harus ditagih ke pelanggan
+                'unpaid' => Order::rupiah($orders->filter(fn (Order $o) => ! $o->is_paid)->sum('total_harga')),
+            ],
+            'orders' => $rows,
+            'statuses' => Order::STATUS_LABELS,
+        ]);
+    }
+
     // Cek satu nomor WhatsApp (dipanggil dari form New Order): sudah terdaftar atau belum
     public function lookup(Request $request)
     {
@@ -87,6 +129,7 @@ class CustomerController extends Controller
             ->withMax('orders', 'waktu_pesanan')
             ->get()
             ->map(fn (Customer $c) => [
+                'id' => $c->id_pelanggan,
                 'name' => $c->nama,
                 'phone' => OrderService::formatPhone($c->no_telepon),
                 'orders' => $c->orders_count,

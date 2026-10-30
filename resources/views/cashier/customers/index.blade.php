@@ -53,8 +53,7 @@
                                 <td>{{ $customer['phone'] }}</td>
                                 <td>{{ $customer['last_visit']->format('j M Y') }}</td>
                                 <td>
-                                    {{-- TODO: arahkan ke riwayat order pelanggan --}}
-                                    <a href="#" class="action">History <x-icon name="arrow-right" :size="13" /></a>
+                                    <a href="{{ route('cashier.customers.history', ['customer' => $customer['id']]) }}" class="action">History <x-icon name="arrow-right" :size="13" /></a>
                                 </td>
                             </tr>
                         @endforeach

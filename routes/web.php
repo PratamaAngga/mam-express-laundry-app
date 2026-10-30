@@ -83,6 +83,8 @@ Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->
     Route::post('/orders/{code}/complete', [OrderController::class, 'complete'])->where('code', '[A-Za-z0-9-]+')->name('orders.complete');
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+    // Customer -> History: semua pesanan satu pelanggan
+    Route::get('/customers/{customer}/history', [CustomerController::class, 'history'])->whereNumber('customer')->name('customers.history');
     // Dicek tiap kali kasir mengetik nomor di form pesanan; dibatasi supaya nomor tidak bisa ditebak beruntun
     Route::get('/customers/lookup', [CustomerController::class, 'lookup'])->middleware('throttle:60,1')->name('customers.lookup');
     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');

@@ -1066,6 +1066,15 @@ input.is-invalid {
     }
 }
 
+/* ===== Customer -> History ===== */
+.stats-4 { grid-template-columns: repeat(4, 1fr); }
+.stat-money { font-size: 18px !important; }
+.toolbar-title { margin: 0; }
+
+@media (max-width: 960px) {
+    .stats-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ===== Halaman Print Receipt ===== */
 .select-label {
     margin-top: 0;
