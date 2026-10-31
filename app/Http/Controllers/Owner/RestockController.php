@@ -51,6 +51,7 @@ class RestockController extends Controller
                     'id'   => $m->id_bahan,
                     'name' => $m->nama_bahan,
                     'unit' => $m->satuan,
+                    'price' => (float) $m->harga_satuan, // diatur supplier, hanya untuk ditampilkan
                 ])->values(),
             ])
             ->values();
@@ -65,22 +66,30 @@ class RestockController extends Controller
             'items'                => ['required', 'array', 'min:1'],
             'items.*.id_bahan'     => ['required', 'exists:bahan_baku,id_bahan'],
             'items.*.jumlah'       => ['required', 'numeric', 'min:0.01'],
-            'items.*.harga_satuan' => ['required', 'numeric', 'min:0'],
             'catatan'              => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Every material must belong to the chosen supplier
-        $allowed = RawMaterial::where('id_supplier', $data['id_supplier'])->pluck('id_bahan')->all();
+        // Every material must belong to the chosen supplier and must already have a price set by that supplier.
+        // Harga selalu diambil dari katalog supplier; harga kiriman dari form tidak dipakai.
+        $materials = RawMaterial::where('id_supplier', $data['id_supplier'])->get()->keyBy('id_bahan');
 
         foreach ($data['items'] as $item) {
-            if (! in_array((int) $item['id_bahan'], $allowed, true)) {
+            $material = $materials->get((int) $item['id_bahan']);
+
+            if (! $material) {
                 throw ValidationException::withMessages([
                     'items' => 'All materials must come from the selected supplier.',
                 ]);
             }
+
+            if ($material->harga_satuan <= 0) {
+                throw ValidationException::withMessages([
+                    'items' => $material->nama_bahan . ' has no price yet. Ask the supplier to set it first.',
+                ]);
+            }
         }
 
-        $order = DB::transaction(function () use ($data) {
+        $order = DB::transaction(function () use ($data, $materials) {
             $sequence = (RestockOrder::max('id_restock') ?? 0) + 1;
 
             $order = RestockOrder::create([
@@ -97,7 +106,7 @@ class RestockController extends Controller
                     'id_restock'   => $order->id_restock,
                     'id_bahan'     => $item['id_bahan'],
                     'jumlah'       => $item['jumlah'],
-                    'harga_satuan' => $item['harga_satuan'],
+                    'harga_satuan' => $materials->get((int) $item['id_bahan'])->harga_satuan,
                     'status'       => 'diajukan',
                 ]);
             }

@@ -14,7 +14,7 @@ class RawMaterial extends Model
     // The table only has updated_at (no created_at)
     const CREATED_AT = null;
 
-    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier', 'pemakaian_per_kg', 'id_tambahan_pemicu'];
+    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier', 'pemakaian_per_kg', 'id_tambahan_pemicu', 'harga_satuan'];
 
     protected function casts(): array
     {
@@ -22,6 +22,7 @@ class RawMaterial extends Model
             'stok_saat_ini' => 'float',
             'stok_minimum'  => 'float',
             'pemakaian_per_kg' => 'float',
+            'harga_satuan'  => 'float',
         ];
     }
 

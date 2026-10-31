@@ -25,7 +25,10 @@
 
         <div>
             <div class="flex items-center justify-between mb-3">
-                <h2 class="font-semibold">Materials</h2>
+                <div>
+                    <h2 class="font-semibold">Materials</h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Unit prices are set by the supplier and cannot be changed here.</p>
+                </div>
                 <button type="button" id="addRow" class="text-sm text-teal-700 font-semibold hover:underline">
                     <i class="ti ti-plus"></i> Add material
                 </button>
@@ -40,9 +43,6 @@
                 <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
             @enderror
             @error('items.*.jumlah')
-                <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
-            @enderror
-            @error('items.*.harga_satuan')
                 <p class="text-red-500 text-xs mt-2">{{ $message }}</p>
             @enderror
 
@@ -101,7 +101,10 @@
             materials.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.id;
-                opt.textContent = m.name + ' (' + m.unit + ')';
+                const hasPrice = m.price > 0;
+                opt.textContent = m.name + ' (' + m.unit + ')' + (hasPrice ? '' : ' - price not set');
+                opt.dataset.price = m.price;
+                opt.disabled = !hasPrice;
                 if (String(selected) === String(m.id)) opt.selected = true;
                 select.appendChild(opt);
             });
@@ -111,7 +114,9 @@
             let total = 0;
             rowsEl.querySelectorAll('.row-item').forEach(row => {
                 const qty = parseFloat(row.querySelector('.qty').value) || 0;
-                const price = parseFloat(row.querySelector('.price').value) || 0;
+                const selected = row.querySelector('.mat').selectedOptions[0];
+                const price = selected ? parseFloat(selected.dataset.price) || 0 : 0;
+                row.querySelector('.price').textContent = price > 0 ? rupiah(price) : '-';
                 const sub = qty * price;
                 row.querySelector('.sub').textContent = rupiah(sub);
                 total += sub;
@@ -134,9 +139,8 @@
                     class="qty w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600">
             </div>
             <div class="col-span-5 md:col-span-2">
-                <label class="block text-xs text-gray-500 mb-1">Unit price (Rp)</label>
-                <input type="number" step="1" min="0" name="items[${i}][harga_satuan]" value="${data.harga_satuan ?? ''}"
-                    class="price w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600">
+                <label class="block text-xs text-gray-500 mb-1">Unit price</label>
+                <div class="price text-sm text-gray-700 pb-2.5 whitespace-nowrap">-</div>
             </div>
             <div class="col-span-3 md:col-span-2 text-sm font-medium pb-2.5 sub">Rp0</div>
             <div class="col-span-12 md:col-span-1 pb-1.5 text-right">
@@ -147,7 +151,7 @@
             fillOptions(row.querySelector('.mat'), data.id_bahan ?? '');
 
             row.querySelector('.qty').addEventListener('input', recalc);
-            row.querySelector('.price').addEventListener('input', recalc);
+            row.querySelector('.mat').addEventListener('change', recalc);
             row.querySelector('.remove').addEventListener('click', () => {
                 if (rowsEl.children.length > 1) {
                     row.remove();
@@ -159,6 +163,7 @@
 
         supplierSelect.addEventListener('change', () => {
             rowsEl.querySelectorAll('.mat').forEach(sel => fillOptions(sel));
+            recalc();
         });
         document.getElementById('addRow').addEventListener('click', () => addRow());
 
