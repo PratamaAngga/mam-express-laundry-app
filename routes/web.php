@@ -10,6 +10,7 @@ use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\ServicePricingController;
+use App\Http\Controllers\Supplier\ProductController;
 use App\Http\Controllers\Supplier\RestockOrderController;
 use App\Http\Controllers\Supplier\ShipmentController;
 use App\Http\Controllers\Processing\ProcessingController;
@@ -108,6 +109,10 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::get('/restock', [RestockOrderController::class, 'index'])->name('restock.index');
     Route::get('/restock/{order}', [RestockOrderController::class, 'show'])->name('restock.show');
     Route::patch('/restock/{order}/confirm', [RestockOrderController::class, 'confirm'])->name('restock.confirm');
+
+    // Kelola produk (harga satuan diatur supplier)
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::patch('/products/{material}', [ProductController::class, 'update'])->whereNumber('material')->name('products.update');
 
     // Shipments
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
