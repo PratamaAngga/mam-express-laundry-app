@@ -59,23 +59,25 @@ class DatabaseSeeder extends Seeder
 
         // Raw materials: same as the Figma design
         $items = [
-            ['Premium air freshener', 'liters', 2,   5,   $aroma,   '2026-10-09 10:30:00'],
-            ['Plastic packaging',     'sheets', 80,  100, $kemasan, '2026-10-09 09:00:00'],
-            ['Liquid detergent',      'liters', 18,  10,  $aroma,   '2026-10-09 09:00:00'],
-            ['Pelembut pakaian',      'liters', 12,  5,   $aroma,   '2026-10-08 16:00:00'],
-            ['Pre-wash detergent',    'liters', 6,   3,   $aroma,   '2026-10-08 16:00:00'],
-            ['Thermal labels',        'sheets', 350, 100, $kemasan, '2026-10-07 11:00:00'],
+            // [nama, satuan, stok, minimum, supplier, updated_at, harga satuan yang ditetapkan supplier]
+            ['Premium air freshener', 'liters', 2,   5,   $aroma,   '2026-10-09 10:30:00', 20000],
+            ['Plastic packaging',     'sheets', 80,  100, $kemasan, '2026-10-09 09:00:00', 1000],
+            ['Liquid detergent',      'liters', 18,  10,  $aroma,   '2026-10-09 09:00:00', 24000],
+            ['Pelembut pakaian',      'liters', 12,  5,   $aroma,   '2026-10-08 16:00:00', 14000],
+            ['Pre-wash detergent',    'liters', 6,   3,   $aroma,   '2026-10-08 16:00:00', 16000],
+            ['Thermal labels',        'sheets', 350, 100, $kemasan, '2026-10-07 11:00:00', 300],
         ];
 
         $materials = [];
 
-        foreach ($items as [$name, $unit, $stock, $minimum, $supplier, $updatedAt]) {
+        foreach ($items as [$name, $unit, $stock, $minimum, $supplier, $updatedAt, $price]) {
             $material = RawMaterial::create([
                 'nama_bahan'    => $name,
                 'satuan'        => $unit,
                 'stok_saat_ini' => $stock,
                 'stok_minimum'  => $minimum,
                 'id_supplier'   => $supplier->id_supplier,
+                'harga_satuan'  => $price,
             ]);
 
             // Force updated_at so it matches the design example
