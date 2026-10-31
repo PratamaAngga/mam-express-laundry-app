@@ -30,6 +30,12 @@ $menu = [
         'match' => 'supplier.restock.*',
     ],
     [
+        'href' => $link('supplier.products.index'),
+        'icon' => 'ti-package',
+        'label' => 'Products',
+        'match' => 'supplier.products.*',
+    ],
+    [
         'href' => $link('supplier.shipments.index'),
         'icon' => 'ti-truck-delivery',
         'label' => 'Shipments',
