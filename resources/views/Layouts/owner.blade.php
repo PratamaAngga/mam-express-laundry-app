@@ -13,43 +13,43 @@
 <body class="bg-[#f4f8f7] text-[#12332d]">
     @php
         // Menu items for pages that don't exist yet (other branches) fall back to '#'
-$link = fn(string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : '#';
-$menu = [
-    [
-        'href' => $link('owner.dashboard'),
-        'icon' => 'ti-layout-dashboard',
-        'label' => 'Dashboard',
-        'match' => 'owner.dashboard',
-    ],
-    [
-        'href' => $link('owner.inventory.index'),
-        'icon' => 'ti-package',
-        'label' => 'Raw Material Inventory',
-        'match' => 'owner.inventory.*',
-    ],
-    [
-        'href' => $link('owner.restock.index'),
-        'icon' => 'ti-truck-delivery',
-        'label' => 'Restock Supplier',
-        'match' => 'owner.restock.*',
-    ],
-    [
-        'href' => $link('owner.reports.index'),
-        'icon' => 'ti-chart-bar',
-        'label' => 'Report',
-        'match' => 'owner.reports.*',
-    ],
-    [
-        'href' => $link('owner.employees.index'),
-        'icon' => 'ti-users',
-        'label' => 'Employee',
-        'match' => 'owner.employees.*',
-    ],
-    [
-        'href' => $link('owner.pricing.index'),
-        'icon' => 'ti-adjustments-horizontal',
-        'label' => 'Service Pricing',
-        'match' => 'owner.pricing.*',
+        $link = fn(string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : '#';
+        $menu = [
+            [
+                'href' => $link('owner.dashboard'),
+                'icon' => 'ti-layout-dashboard',
+                'label' => 'Dashboard',
+                'match' => 'owner.dashboard',
+            ],
+            [
+                'href' => $link('owner.inventory.index'),
+                'icon' => 'ti-package',
+                'label' => 'Raw Material Inventory',
+                'match' => 'owner.inventory.*',
+            ],
+            [
+                'href' => $link('owner.restock.index'),
+                'icon' => 'ti-truck-delivery',
+                'label' => 'Restock Supplier',
+                'match' => 'owner.restock.*',
+            ],
+            [
+                'href' => $link('owner.reports.index'),
+                'icon' => 'ti-chart-bar',
+                'label' => 'Report',
+                'match' => 'owner.reports.*',
+            ],
+            [
+                'href' => $link('owner.employees.index'),
+                'icon' => 'ti-users',
+                'label' => 'Employee',
+                'match' => 'owner.employees.*',
+            ],
+            [
+                'href' => $link('owner.pricing.index'),
+                'icon' => 'ti-adjustments-horizontal',
+                'label' => 'Service Pricing',
+                'match' => 'owner.pricing.*',
             ],
         ];
     @endphp
@@ -93,12 +93,7 @@ $menu = [
                 <p class="text-sm font-semibold truncate">{{ auth()->user()->nama }}</p>
                 <p class="text-xs text-gray-500">Owner / Admin</p>
             </div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button title="Log out" class="text-gray-500 hover:text-gray-800 text-lg">
-                    <i class="ti ti-logout"></i>
-                </button>
-            </form>
+            <x-logout-button />
         </div>
     </aside>
 

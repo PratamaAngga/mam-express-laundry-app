@@ -58,10 +58,7 @@
                         <strong>{{ $staff['name'] }}</strong><br>
                         <span class="muted small">{{ $staff['role'] }} &middot; {{ $staff['task'] }}</span>
                     </span>
-                    <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                        @csrf
-                        <button type="submit" class="logout" aria-label="Log out" title="Log out"><x-icon name="log-out" :size="16" /></button>
-                    </form>
+                    <x-logout-button />
                 </div>
             </div>
         </aside>
@@ -75,7 +72,8 @@
                 <div class="topbar-right">
                     <span class="muted small">{{ now()->format('l, j F Y') }}</span>
                     <span class="online"><span class="live-dot"></span> All systems online</span>
-                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell" :size="16" /></a>
+                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell"
+                            :size="16" /></a>
                 </div>
             </header>
 
