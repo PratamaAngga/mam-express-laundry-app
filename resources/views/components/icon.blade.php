@@ -72,5 +72,11 @@
     @case('camera')
         <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>
         @break
+    @case('arrow-left')
+        <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
+        @break
+    @case('alert-circle')
+        <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+        @break
 @endswitch
 </svg>

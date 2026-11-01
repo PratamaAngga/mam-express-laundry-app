@@ -10,6 +10,7 @@ use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\ServicePricingController;
+use App\Http\Controllers\Supplier\ProductController;
 use App\Http\Controllers\Supplier\RestockOrderController;
 use App\Http\Controllers\Supplier\ShipmentController;
 use App\Http\Controllers\Processing\ProcessingController;
@@ -47,6 +48,8 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
 
     // Raw Material Inventory
     Route::get('/inventory', [InventoryController::class, 'index'])->name('inventory.index');
+    // Edit minimum stock (pop-up di tabel inventory)
+    Route::patch('/inventory/{material}/minimum', [InventoryController::class, 'updateMinimum'])->whereNumber('material')->name('inventory.minimum');
 
     // Restock Supplier
     Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
@@ -77,22 +80,28 @@ Route::middleware(['auth', 'role:kasir'])->prefix('cashier')->name('cashier.')->
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/success', [OrderController::class, 'success'])->name('orders.success');
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    // Order List -> View details (harus setelah /orders/create dan /orders/success)
+    Route::get('/orders/{code}', [OrderController::class, 'show'])->where('code', '[A-Za-z0-9-]+')->name('orders.show');
+    // Pelanggan mengambil cucian: kasir menandai pesanan Selesai (FR-09)
+    Route::post('/orders/{code}/complete', [OrderController::class, 'complete'])->where('code', '[A-Za-z0-9-]+')->name('orders.complete');
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::post('/customers', [CustomerController::class, 'store'])->name('customers.store');
+    // Customer -> History: semua pesanan satu pelanggan
+    Route::get('/customers/{customer}/history', [CustomerController::class, 'history'])->whereNumber('customer')->name('customers.history');
+    // Dicek tiap kali kasir mengetik nomor di form pesanan; dibatasi supaya nomor tidak bisa ditebak beruntun
+    Route::get('/customers/lookup', [CustomerController::class, 'lookup'])->middleware('throttle:60,1')->name('customers.lookup');
     Route::get('/receipt', [ReceiptController::class, 'index'])->name('receipt.index');
 });
 
-Route::prefix('processing')->name('processing.')->group(function () {
+Route::middleware(['auth', 'role:petugas_processing'])->prefix('processing')->name('processing.')->group(function () {
     Route::get('/', [ProcessingController::class, 'home'])->name('home');
     Route::get('/work-session', [ProcessingController::class, 'workSession'])->name('work-session');
     Route::post('/shift/start', [ProcessingController::class, 'startShift'])->name('shift.start');
     Route::post('/shift/finish', [ProcessingController::class, 'finishShift'])->name('shift.finish');
-    Route::post('/work-session/update-status', [ProcessingController::class, 'updateStatus'])->name('work-session.update');
 
-    // Scan QR / kode manual -> konfirmasi -> ubah status
-    Route::post('/scan', [ProcessingOrderController::class, 'find'])->name('scan');
-    Route::get('/orders/{code}', [ProcessingOrderController::class, 'show'])->where('code', '[A-Za-z0-9-]+')->name('order.show');
-    Route::post('/orders/{code}/advance', [ProcessingOrderController::class, 'advance'])->where('code', '[A-Za-z0-9-]+')->name('order.advance');
+    // Endpoint JSON Work Session: cek pesanan (lookup) lalu ubah status (update)
+    Route::get('/work-session/orders/{code}', [ProcessingOrderController::class, 'lookup'])->where('code', '[A-Za-z0-9-]+')->name('work-session.lookup');
+    Route::post('/work-session/update-status', [ProcessingOrderController::class, 'update'])->name('work-session.update');
 });
 
 Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier.')->group(function () {
@@ -100,6 +109,10 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     Route::get('/restock', [RestockOrderController::class, 'index'])->name('restock.index');
     Route::get('/restock/{order}', [RestockOrderController::class, 'show'])->name('restock.show');
     Route::patch('/restock/{order}/confirm', [RestockOrderController::class, 'confirm'])->name('restock.confirm');
+
+    // Kelola produk (harga satuan diatur supplier)
+    Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+    Route::patch('/products/{material}', [ProductController::class, 'update'])->whereNumber('material')->name('products.update');
 
     // Shipments
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');

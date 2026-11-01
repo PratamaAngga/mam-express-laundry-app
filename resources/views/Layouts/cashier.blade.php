@@ -33,7 +33,7 @@
                     <x-icon name="plus-circle" /> New Order
                 </a>
                 <a href="{{ route('cashier.orders.index') }}"
-                    class="{{ request()->routeIs('cashier.orders.index') ? 'active' : '' }}">
+                    class="{{ request()->routeIs('cashier.orders.index', 'cashier.orders.show') ? 'active' : '' }}">
                     <x-icon name="clipboard" /> Order List
                 </a>
                 <a href="{{ route('cashier.customers.index') }}"

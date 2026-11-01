@@ -37,12 +37,20 @@ class OrderStatusFlowTest extends TestCase
         $this->assertFalse(OrderStatusService::allowed('owner_admin', Order::STATUS_PACKED));
     }
 
+    public function test_alasan_penolakan_sesuai_status_dan_role(): void
+    {
+        $this->assertNull(OrderStatusService::blockedReason('petugas_processing', Order::STATUS_QUEUED));
+        $this->assertStringContainsString('cashier', OrderStatusService::blockedReason('petugas_processing', Order::STATUS_PACKED));
+        $this->assertStringContainsString('already done', OrderStatusService::blockedReason('kasir', Order::STATUS_DONE));
+        $this->assertStringContainsString('not allowed', OrderStatusService::blockedReason('supplier', Order::STATUS_QUEUED));
+    }
+
     public function test_qr_menghasilkan_kotak_dan_ukuran_yang_masuk_akal(): void
     {
-        $qr = (new QrCodeService())->rects('http://localhost:8000/processing/orders/BNG-261017-0001');
+        $qr = (new QrCodeService())->rects('BNG-261017-0001');
 
         $this->assertStringContainsString('<rect', $qr['rects']);
-        // versi QR terkecil 21 modul + 2 x 4 modul ruang putih
-        $this->assertGreaterThanOrEqual(29, $qr['size']);
+        // versi QR terkecil 21 modul + 2 x 4 modul ruang putih; kode pendek muat di versi terkecil
+        $this->assertSame(29, $qr['size']);
     }
 }

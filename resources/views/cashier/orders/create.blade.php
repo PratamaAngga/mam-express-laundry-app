@@ -15,7 +15,8 @@
     <div class="alert">{{ session('success') }}</div>
 @endif
 
-<form id="order-form" action="{{ route('cashier.orders.store') }}" method="POST" class="grid" data-freshener="{{ $freshenerPrice }}">
+<form id="order-form" action="{{ route('cashier.orders.store') }}" method="POST" class="grid" data-freshener="{{ $freshenerPrice }}"
+      data-lookup-url="{{ route('cashier.customers.lookup') }}">
     @csrf
 
     <div class="col-left">
@@ -23,7 +24,7 @@
         <section class="card">
             <div class="card-head">
                 <h2>Customer</h2>
-                <a href="#" class="link">+ New Customers</a>
+                {{-- <a href="#" class="link">+ New Customers</a> --}}
             </div>
 
             <label for="whatsapp">WhatsApp Number</label>

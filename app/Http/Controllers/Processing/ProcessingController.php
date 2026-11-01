@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Processing;
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Order;
+use App\Services\OrderStatusService;
 
 class ProcessingController extends Controller
 {
-    private const SHIFT_KEY = 'processing_shift_started_at';
+    public const SHIFT_KEY = 'processing_shift_started_at';
 
     // Halaman Processing home
     public function home()
@@ -39,54 +40,31 @@ class ProcessingController extends Controller
         return redirect()->route('processing.home');
     }
 
-    // Tombol "Update Status" (dipanggil lewat fetch dari halaman Work session)
-    public function updateStatus(Request $request)
-    {
-        if (!session(self::SHIFT_KEY)) {
-            return response()->json(['ok' => false, 'message' => 'Your shift has not started yet.'], 403);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'order_id' => ['required', 'string', 'max:30', 'regex:/^[A-Za-z]{2,5}-\d{3,6}(-\d{3,6})?$/'],
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'ok' => false,
-                'message' => 'Order ID not recognised. Check the label and try again.',
-            ], 422);
-        }
-
-        $orderId = strtoupper($request->input('order_id'));
-        $staff = $this->staff();
-
-        // TODO (backend): cari order di database, ubah statusnya sesuai tugas staf
-        $log = session('processing_updates', []);
-        $log[] = [
-            'order_id' => $orderId,
-            'status' => $staff['status'],
-            'by' => $staff['name'],
-            'at' => Carbon::now()->toIso8601String(),
-        ];
-        session(['processing_updates' => $log]);
-
-        return response()->json([
-            'ok' => true,
-            'order_id' => $orderId,
-            'status' => $staff['status'],
-        ]);
-    }
-
-    // DATA DUMMY
     private function staff(): array
     {
+        // Nama dan inisial diambil dari akun yang sedang login
+        $nama = trim(auth()->user()->nama);
+        $words = preg_split('/\s+/', $nama);
+
+        // Langkah status yang boleh dikerjakan role ini, diambil dari aturan alur (OrderStatusService) dan label database
+        $steps = collect(OrderStatusService::stepsFor(auth()->user()->role))->map(fn ($step) => [
+            'from' => $step['from'],
+            'to' => $step['to'],
+            'from_label' => Order::STATUS_LABELS[$step['from']] ?? $step['from'],
+            'to_label' => Order::STATUS_LABELS[$step['to']] ?? $step['to'],
+        ])->all();
+
+        // Contoh: "Antre Cuci → Diproses → Dikemas dan Siap Diambil"
+        $labels = collect($steps)->pluck('from_label')->push(collect($steps)->last()['to_label'] ?? null)->filter()->unique()->values();
+
         return [
-            'name' => 'Adi Maulana',
-            'first_name' => 'Adi',
-            'initials' => 'AP',
+            'name' => $nama,
+            'first_name' => $words[0],
+            'initials' => collect($words)->take(2)->map(fn ($w) => mb_strtoupper(mb_substr($w, 0, 1)))->implode(''),
             'role' => 'Processing',
-            'task' => 'Washing',
-            'status' => 'Washing',
+            'task' => 'Update status',
+            'steps' => $steps,
+            'flow' => $labels->implode(' → '),
         ];
     }
 

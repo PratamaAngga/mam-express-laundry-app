@@ -76,6 +76,12 @@ class Order extends Model
         return $this->hasMany(OrderStatusHistory::class, 'id_pesanan', 'id_pesanan');
     }
 
+    // Riwayat pesan WhatsApp yang terkait pesanan ini (invoice, kabar status)
+    public function whatsappMessages(): HasMany
+    {
+        return $this->hasMany(WhatsappMessage::class, 'id_pesanan', 'id_pesanan');
+    }
+
     public function getIsPaidAttribute(): bool
     {
         return $this->status_pembayaran === 'lunas';

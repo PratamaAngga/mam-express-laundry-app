@@ -110,6 +110,7 @@
                     <th class="px-6 py-4 font-medium">Supplier</th>
                     <th class="px-6 py-4 font-medium">Status</th>
                     <th class="px-6 py-4 font-medium">Last updated</th>
+                    <th class="px-6 py-4 font-medium">Action</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100" id="stockBody">
@@ -121,16 +122,28 @@
                         <td class="px-6 py-5">{{ $m->supplier?->nama_supplier ?? '-' }}</td>
                         <td class="px-6 py-5">
                             @if ($m->is_low)
-                                <span class="px-3 py-1 rounded-full text-xs bg-amber-50 text-amber-700">Running low</span>
+                                <span class="inline-block whitespace-nowrap px-3 py-1 rounded-full text-xs bg-amber-50 text-amber-700">Running low</span>
                             @else
-                                <span class="px-3 py-1 rounded-full text-xs bg-teal-50 text-teal-700">Safe</span>
+                                <span class="inline-block whitespace-nowrap px-3 py-1 rounded-full text-xs bg-teal-50 text-teal-700">Safe</span>
                             @endif
                         </td>
                         <td class="px-6 py-5">{{ $m->updated_label }}</td>
+                        <td class="px-6 py-5">
+                            <button type="button"
+                                class="js-edit-min inline-flex items-center gap-1.5 whitespace-nowrap border border-gray-200 rounded-lg px-3 py-2 text-xs font-semibold hover:bg-gray-50"
+                                data-id="{{ $m->id_bahan }}"
+                                data-action="{{ route('owner.inventory.minimum', ['material' => $m->id_bahan]) }}"
+                                data-name="{{ $m->nama_bahan }}"
+                                data-unit="{{ $m->satuan }}"
+                                data-stock="{{ RawMaterial::formatNumber($m->stok_saat_ini) }}"
+                                data-minimum="{{ rtrim(rtrim(number_format($m->stok_minimum, 3, '.', ''), '0'), '.') }}">
+                                <i class="ti ti-edit"></i> Edit minimum
+                            </button>
+                        </td>
                     </tr>
                 @endforeach
                 <tr id="emptyRow" class="{{ $materials->isEmpty() ? '' : 'hidden' }}">
-                    <td colspan="6" class="px-6 py-10 text-center text-gray-400">No ingredients found.</td>
+                    <td colspan="7" class="px-6 py-10 text-center text-gray-400">No ingredients found.</td>
                 </tr>
             </tbody>
         </table>
@@ -171,6 +184,55 @@
                     class="ti ti-arrow-right"></i></a>
         </div>
     </div>
+
+    {{-- Pop-up Edit minimum stock --}}
+    @php
+        // Setelah validasi gagal, pop-up dibuka lagi untuk bahan yang sama
+        $editId = old('edit_material');
+        $editing = $editId ? $materials->firstWhere('id_bahan', (int) $editId) : null;
+    @endphp
+    <div id="minModal" class="{{ $errors->has('stok_minimum') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog" aria-modal="true" aria-labelledby="minModalTitle">
+        <div class="absolute inset-0 bg-black/40" data-close-modal></div>
+        <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
+            <div class="flex items-start justify-between gap-4 mb-1">
+                <h2 id="minModalTitle" class="text-xl font-semibold text-[#12332d]">Edit minimum stock</h2>
+                <button type="button" class="text-gray-500 hover:text-gray-800" aria-label="Close" data-close-modal>
+                    <i class="ti ti-x text-xl"></i>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 mb-5">A warning appears when stock falls to or below this level.</p>
+
+            <form id="minForm" method="POST" action="{{ $editing ? route('owner.inventory.minimum', ['material' => $editing->id_bahan]) : '#' }}" novalidate>
+                @csrf
+                @method('PATCH')
+                <input type="hidden" name="edit_material" id="minEditId" value="{{ $editing?->id_bahan }}">
+
+                <div class="bg-[#eef3f2] rounded-xl px-4 py-3 mb-5 text-sm">
+                    <p class="font-semibold" id="minName">{{ $editing?->nama_bahan }}</p>
+                    <p class="text-gray-500">Current stock: <span id="minStock">{{ $editing ? RawMaterial::formatNumber($editing->stok_saat_ini) : '' }}</span> <span class="min-unit">{{ $editing?->satuan }}</span></p>
+                </div>
+
+                <label for="stok_minimum" class="block text-sm font-medium mb-2">Minimum stock</label>
+                <div class="relative">
+                    <input type="number" id="stok_minimum" name="stok_minimum" step="any" min="0" inputmode="decimal"
+                        value="{{ old('stok_minimum') }}"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-3 pr-20 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 @error('stok_minimum') border-red-500 @enderror">
+                    <span class="min-unit absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500">{{ $editing?->satuan }}</span>
+                </div>
+                @error('stok_minimum')
+                    <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                @enderror
+
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <button type="button" data-close-modal
+                        class="border border-gray-200 rounded-lg px-5 py-3 text-sm font-semibold hover:bg-gray-50">Cancel</button>
+                    <button type="submit"
+                        class="bg-teal-700 hover:bg-teal-800 text-white rounded-lg px-5 py-3 text-sm font-semibold">Save minimum</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -193,5 +255,30 @@
         }
         search.addEventListener('input', applyFilter);
         filter.addEventListener('change', applyFilter);
+
+        // ---- Pop-up Edit minimum stock ----
+        const modal = document.getElementById('minModal');
+        const minForm = document.getElementById('minForm');
+        const minInput = document.getElementById('stok_minimum');
+
+        function openModal(btn) {
+            minForm.action = btn.dataset.action;
+            document.getElementById('minEditId').value = btn.dataset.id;
+            document.getElementById('minName').textContent = btn.dataset.name;
+            document.getElementById('minStock').textContent = btn.dataset.stock;
+            modal.querySelectorAll('.min-unit').forEach(el => el.textContent = btn.dataset.unit);
+            minInput.value = btn.dataset.minimum;
+            modal.classList.remove('hidden');
+            minInput.focus();
+            minInput.select();
+        }
+
+        function closeModal() {
+            modal.classList.add('hidden');
+        }
+
+        document.querySelectorAll('.js-edit-min').forEach(btn => btn.addEventListener('click', () => openModal(btn)));
+        modal.querySelectorAll('[data-close-modal]').forEach(el => el.addEventListener('click', closeModal));
+        document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal(); });
     </script>
 @endpush

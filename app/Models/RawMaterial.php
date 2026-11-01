@@ -14,13 +14,15 @@ class RawMaterial extends Model
     // The table only has updated_at (no created_at)
     const CREATED_AT = null;
 
-    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier'];
+    protected $fillable = ['nama_bahan', 'satuan', 'stok_saat_ini', 'stok_minimum', 'id_supplier', 'pemakaian_per_kg', 'id_tambahan_pemicu', 'harga_satuan'];
 
     protected function casts(): array
     {
         return [
             'stok_saat_ini' => 'float',
             'stok_minimum'  => 'float',
+            'pemakaian_per_kg' => 'float',
+            'harga_satuan'  => 'float',
         ];
     }
 
@@ -34,21 +36,21 @@ class RawMaterial extends Model
         return $this->hasMany(StockLog::class, 'id_bahan', 'id_bahan');
     }
 
-    /** Stock below the minimum level (FR-12). */
+    /** Stock at or below the minimum level (FR-12). */
     public function scopeLowStock($query)
     {
-        return $query->whereColumn('stok_saat_ini', '<', 'stok_minimum');
+        return $query->whereColumn('stok_saat_ini', '<=', 'stok_minimum');
     }
 
     public function getIsLowAttribute(): bool
     {
-        return $this->stok_saat_ini < $this->stok_minimum;
+        return $this->stok_saat_ini <= $this->stok_minimum;
     }
 
     /** 2 -> "2", 0.5 -> "0,5", 1000 -> "1.000" */
     public static function formatNumber(float|int|string $value): string
     {
-        $text = number_format((float) $value, 2, ',', '.');
+        $text = number_format((float) $value, 3, ',', '.');
 
         return rtrim(rtrim($text, '0'), ',');
     }

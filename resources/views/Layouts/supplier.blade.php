@@ -21,6 +21,16 @@
             ->implode('');
 
         // Menu items for pages that don't exist yet (other branches) fall back to '#'
+    @php
+        $user = auth()->user();
+        $companyName = \App\Models\Supplier::where('id_user', $user->id_user)->value('nama_supplier') ?? $user->nama;
+        $initials = collect(explode(' ', trim($user->nama)))
+            ->filter()
+            ->take(2)
+            ->map(fn($w) => strtoupper(mb_substr($w, 0, 1)))
+            ->implode('');
+
+        // Menu items for pages that don't exist yet (other branches) fall back to '#'
         $link = fn(string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : '#';
         $menu = [
             [
@@ -28,6 +38,12 @@
                 'icon' => 'ti-clipboard-list',
                 'label' => 'Restock Orders',
                 'match' => 'supplier.restock.*',
+            ],
+            [
+                'href' => $link('supplier.products.index'),
+                'icon' => 'ti-package',
+                'label' => 'Products',
+                'match' => 'supplier.products.*',
             ],
             [
                 'href' => $link('supplier.shipments.index'),

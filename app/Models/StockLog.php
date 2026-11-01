@@ -11,7 +11,7 @@ class StockLog extends Model
     protected $primaryKey = 'id_log';
     public $timestamps = false;
 
-    protected $fillable = ['id_bahan', 'id_restock', 'tipe', 'jumlah', 'waktu'];
+    protected $fillable = ['id_bahan', 'id_restock', 'id_pesanan', 'tipe', 'jumlah', 'waktu'];
 
     protected function casts(): array
     {
