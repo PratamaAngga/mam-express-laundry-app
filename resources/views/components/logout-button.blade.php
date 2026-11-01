@@ -24,7 +24,7 @@
             <div>
                 <h2 class="text-lg font-semibold text-[#12332d]">Log out?</h2>
                 <p class="mt-1 text-sm text-gray-500">
-                    Are you sure you want to log out? You will need to log in again to continue.
+                    Are you sure you want to log out? You will need to sign in again to continue.
                 </p>
             </div>
         </div>
