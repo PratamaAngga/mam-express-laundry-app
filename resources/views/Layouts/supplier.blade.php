@@ -21,25 +21,35 @@
             ->implode('');
 
         // Menu items for pages that don't exist yet (other branches) fall back to '#'
-$link = fn(string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : '#';
-$menu = [
-    [
-        'href' => $link('supplier.restock.index'),
-        'icon' => 'ti-clipboard-list',
-        'label' => 'Restock Orders',
-        'match' => 'supplier.restock.*',
-    ],
-    [
-        'href' => $link('supplier.products.index'),
-        'icon' => 'ti-package',
-        'label' => 'Products',
-        'match' => 'supplier.products.*',
-    ],
-    [
-        'href' => $link('supplier.shipments.index'),
-        'icon' => 'ti-truck-delivery',
-        'label' => 'Shipments',
-        'match' => 'supplier.shipments.*',
+    @php
+        $user = auth()->user();
+        $companyName = \App\Models\Supplier::where('id_user', $user->id_user)->value('nama_supplier') ?? $user->nama;
+        $initials = collect(explode(' ', trim($user->nama)))
+            ->filter()
+            ->take(2)
+            ->map(fn($w) => strtoupper(mb_substr($w, 0, 1)))
+            ->implode('');
+
+        // Menu items for pages that don't exist yet (other branches) fall back to '#'
+        $link = fn(string $name) => \Illuminate\Support\Facades\Route::has($name) ? route($name) : '#';
+        $menu = [
+            [
+                'href' => $link('supplier.restock.index'),
+                'icon' => 'ti-clipboard-list',
+                'label' => 'Restock Orders',
+                'match' => 'supplier.restock.*',
+            ],
+            [
+                'href' => $link('supplier.products.index'),
+                'icon' => 'ti-package',
+                'label' => 'Products',
+                'match' => 'supplier.products.*',
+            ],
+            [
+                'href' => $link('supplier.shipments.index'),
+                'icon' => 'ti-truck-delivery',
+                'label' => 'Shipments',
+                'match' => 'supplier.shipments.*',
             ],
         ];
     @endphp
@@ -82,11 +92,7 @@ $menu = [
                 <p class="text-sm font-semibold truncate">{{ $user->nama }}</p>
                 <p class="text-xs text-gray-500">Supplier</p>
             </div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button title="Log out" class="text-gray-500 hover:text-gray-800 text-lg"><i
-                        class="ti ti-logout"></i></button>
-            </form>
+            <x-logout-button />
         </div>
     </aside>
 

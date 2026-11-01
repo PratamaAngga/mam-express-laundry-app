@@ -50,11 +50,9 @@
                 <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help Center</a>
                 <div class="user">
                     <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
-                    <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span class="muted small">Cashier</span></span>
-                    <form method="POST" action="{{ route('logout') }}" class="logout-form">
-                        @csrf
-                        <button type="submit" class="logout" aria-label="Log out" title="Log out"><x-icon name="log-out" :size="16" /></button>
-                    </form>
+                    <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span
+                            class="muted small">Cashier</span></span>
+                    <x-logout-button />
                 </div>
             </div>
         </aside>
@@ -67,7 +65,8 @@
                 </div>
                 <div class="topbar-right">
                     <span class="muted small">{{ now()->format('l, F j, Y') }}</span>
-                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell" :size="16" /></a>
+                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell"
+                            :size="16" /></a>
                 </div>
             </header>
 
