@@ -33,22 +33,28 @@
                     <x-icon name="plus-circle" /> New Order
                 </a>
                 <a href="{{ route('cashier.orders.index') }}"
-                    class="{{ request()->routeIs('cashier.orders.index') ? 'active' : '' }}">
+                    class="{{ request()->routeIs('cashier.orders.index', 'cashier.orders.show') ? 'active' : '' }}">
                     <x-icon name="clipboard" /> Order List
                 </a>
                 <a href="{{ route('cashier.customers.index') }}"
                     class="{{ request()->routeIs('cashier.customers.*') ? 'active' : '' }}">
                     <x-icon name="users" /> Customers
                 </a>
-                <a href="#"><x-icon name="printer" /> Print Receipt</a>
+                <a href="{{ route('cashier.receipt.index') }}"
+                    class="{{ request()->routeIs('cashier.receipt.*') ? 'active' : '' }}">
+                    <x-icon name="printer" /> Print Receipt
+                </a>
             </nav>
 
             <div class="sidebar-bottom">
                 <a href="#" class="help"><x-icon name="help-circle" :size="16" /> Help Center</a>
                 <div class="user">
-                    <span class="avatar">K</span>
-                    <span class="user-info"><strong>Kartiko</strong><br><span class="muted small">Cashier</span></span>
-                    <a href="#" class="logout" aria-label="Log out"><x-icon name="log-out" :size="16" /></a>
+                    <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
+                    <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span class="muted small">Cashier</span></span>
+                    <form method="POST" action="{{ route('logout') }}" class="logout-form">
+                        @csrf
+                        <button type="submit" class="logout" aria-label="Log out" title="Log out"><x-icon name="log-out" :size="16" /></button>
+                    </form>
                 </div>
             </div>
         </aside>

@@ -58,7 +58,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         // The "dashboard" route sends each role to its own home page
-        return redirect()->intended('/dashboard');
+        return redirect()->route('/dashboard');
     }
 
     /**
