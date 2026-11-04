@@ -34,6 +34,12 @@
                 'match' => 'owner.restock.*',
             ],
             [
+                'href' => $link('owner.suppliers.index'),
+                'icon' => 'ti-building-store',
+                'label' => 'Suppliers',
+                'match' => 'owner.suppliers.*',
+            ],
+            [
                 'href' => $link('owner.reports.index'),
                 'icon' => 'ti-chart-bar',
                 'label' => 'Report',
