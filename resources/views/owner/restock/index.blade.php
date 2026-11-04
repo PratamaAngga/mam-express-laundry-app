@@ -7,7 +7,7 @@
 @section('actions')
     <a href="{{ route('owner.restock.create') }}"
         class="inline-flex items-center gap-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg px-6 py-3.5">
-        <i class="ti ti-plus"></i> Ajukan Restock
+        <i class="ti ti-plus"></i> Request a Restock
     </a>
 @endsection
 

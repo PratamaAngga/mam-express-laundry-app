@@ -1,7 +1,7 @@
 @extends('layouts.owner')
 
 @section('title', 'Restock Supplier')
-@section('heading', 'Ajukan Restock')
+@section('heading', 'Request a Restock')
 @section('subheading', 'Choose a supplier and the materials you need.')
 
 @section('content')
