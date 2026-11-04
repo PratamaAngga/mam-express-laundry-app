@@ -24,7 +24,18 @@ class Supplier extends Model
         return $this->hasMany(RawMaterial::class, 'id_supplier', 'id_supplier');
     }
 
-        /** "081288005500" -> "0812 8800 5500" */
+    public function restockOrders(): HasMany
+    {
+        return $this->hasMany(RestockOrder::class, 'id_supplier', 'id_supplier');
+    }
+
+    /** The supplier is active when its login account is active. */
+    public function getIsActiveAttribute(): bool
+    {
+        return (bool) $this->user?->status_aktif;
+    }
+
+    /** "081188005500" -> "0811 8800 5500" */
     public function getWhatsappLabelAttribute(): string
     {
         $digits = preg_replace('/\D/', '', $this->no_whatsapp);

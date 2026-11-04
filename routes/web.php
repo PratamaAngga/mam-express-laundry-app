@@ -10,6 +10,7 @@ use App\Http\Controllers\Owner\InventoryController;
 use App\Http\Controllers\Owner\RestockController;
 use App\Http\Controllers\Owner\ReportController;
 use App\Http\Controllers\Owner\ServicePricingController;
+use App\Http\Controllers\Owner\SupplierController;
 use App\Http\Controllers\Supplier\ProductController;
 use App\Http\Controllers\Supplier\RestockOrderController;
 use App\Http\Controllers\Supplier\ShipmentController;
@@ -55,6 +56,15 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
     Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
     Route::get('/restock/create', [RestockController::class, 'create'])->name('restock.create');
     Route::post('/restock', [RestockController::class, 'store'])->name('restock.store');
+
+    // Supplier management
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->whereNumber('supplier')->name('suppliers.edit');
+    Route::patch('/suppliers/{supplier}', [SupplierController::class, 'update'])->whereNumber('supplier')->name('suppliers.update');
+    Route::patch('/suppliers/{supplier}/status', [SupplierController::class, 'toggleStatus'])->whereNumber('supplier')->name('suppliers.status');
+    Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->whereNumber('supplier')->name('suppliers.destroy');
 
     // Report
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

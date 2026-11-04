@@ -42,6 +42,8 @@ class RestockController extends Controller
     {
         // Suppliers with their materials, used by the form to filter the material dropdown
         $catalog = Supplier::with('rawMaterials')
+            ->whereHas('user', fn ($u) => $u->where('status_aktif', true))
+            ->whereHas('rawMaterials')
             ->orderBy('nama_supplier')
             ->get()
             ->map(fn ($s) => [
