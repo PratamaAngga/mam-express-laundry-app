@@ -37,7 +37,7 @@
             </div>
 
             <div>
-                <label for="email" class="block text-sm mb-1.5">Email akun</label>
+                <label for="email" class="block text-sm mb-1.5">Account Email</label>
                 <input type="email" name="email" id="email" value="{{ old('email') }}" placeholder="name@gmail.com"
                     class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 @error('email') border-red-500 @enderror">
                 @error('email')

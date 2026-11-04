@@ -72,8 +72,8 @@
                 <select name="status" onchange="this.form.submit()"
                     class="appearance-none bg-white border border-gray-200 rounded-lg pl-5 pr-10 py-3 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-600">
                     <option value="">All statuses</option>
-                    <option value="active" @selected($statusFilter === 'active')>Aktif</option>
-                    <option value="inactive" @selected($statusFilter === 'inactive')>Nonaktif</option>
+                    <option value="active" @selected($statusFilter === 'active')>Active</option>
+                    <option value="inactive" @selected($statusFilter === 'inactive')>Inactive</option>
                 </select>
                 <i class="ti ti-chevron-down absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none"></i>
             </div>
@@ -98,9 +98,9 @@
                         <td class="px-6 py-5">{{ $roles[$u->role] ?? $u->role }}</td>
                         <td class="px-6 py-5">
                             @if ($u->status_aktif)
-                                <span class="px-3 py-1 rounded-full text-xs bg-teal-50 text-teal-700">Aktif</span>
+                                <span class="px-3 py-1 rounded-full text-xs bg-teal-50 text-teal-700">Active</span>
                             @else
-                                <span class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-500">Nonaktif</span>
+                                <span class="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-500">Inactive</span>
                             @endif
                         </td>
                         <td class="px-6 py-5">
@@ -116,9 +116,9 @@
                                         @csrf
                                         @method('PATCH')
                                         @if ($u->status_aktif)
-                                            <button class="text-red-600 hover:underline">Nonaktifkan</button>
+                                            <button class="text-red-600 hover:underline">Deactivate</button>
                                         @else
-                                            <button class="text-teal-700 hover:underline">Aktifkan</button>
+                                            <button class="text-teal-700 hover:underline">Activate</button>
                                         @endif
                                     </form>
                                 @endif
