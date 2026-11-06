@@ -2,11 +2,15 @@
 
 namespace App\Services;
 
+use App\Exceptions\InvalidStatusTransition;
 use App\Models\Order;
 use App\Models\RawMaterial;
+use App\Models\RestockOrder;
 use App\Models\StockLog;
 use App\Models\StockNotification;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Pengurangan stok bahan baku otomatis (milik backend).
@@ -31,6 +35,88 @@ class StockService
     public static function crossedIntoLow(float $before, float $after, float $minimum): bool
     {
         return ! self::isLow($before, $minimum) && self::isLow($after, $minimum);
+    }
+
+    /** Alasan jumlah yang diterima tidak valid; null kalau boleh (0 sampai jumlah yang dipesan). */
+    public static function receiptError(float $ordered, float $received): ?string
+    {
+        if ($received < 0) {
+            return 'The received quantity cannot be negative.';
+        }
+
+        if ($received > $ordered) {
+            return 'The received quantity cannot be more than what was ordered.';
+        }
+
+        return null;
+    }
+
+    /**
+     * Konfirmasi restock diterima (FR-16): stok bertambah sesuai jumlah yang BENAR-BENAR datang,
+     * dicatat di log_stok sebagai "masuk", dan status restock menjadi "diterima".
+     * Semuanya satu transaksi; klik ganda ditolak karena status sudah bukan "dikirim".
+     *
+     * @param  array<int|string, mixed>  $received  id_detail => jumlah yang diterima
+     */
+    public function receiveRestock(int $restockId, array $received): RestockOrder
+    {
+        return DB::transaction(function () use ($restockId, $received) {
+            // kunci baris restock dulu, supaya dua permintaan bersamaan tidak sama-sama menambah stok
+            $restock = RestockOrder::lockForUpdate()->findOrFail($restockId);
+
+            if ($restock->status !== 'dikirim') {
+                throw new InvalidStatusTransition('Only shipped orders can be confirmed as received.');
+            }
+
+            // urut per bahan, sama seperti pemotongan stok, mencegah saling kunci antar transaksi
+            $details = $restock->details()->orderBy('id_bahan')->get();
+
+            // periksa semua jumlah SEBELUM mengubah apa pun
+            foreach ($details as $detail) {
+                $qty = $received[$detail->id_detail] ?? null;
+
+                if ($qty === null || ! is_numeric($qty)) {
+                    throw new InvalidArgumentException('Enter the received quantity for every material.');
+                }
+
+                $error = self::receiptError((float) $detail->jumlah, (float) $qty);
+
+                if ($error !== null) {
+                    throw new InvalidArgumentException($error);
+                }
+            }
+
+            $now = now();
+
+            foreach ($details as $detail) {
+                $qty = round((float) $received[$detail->id_detail], 3);
+
+                $detail->jumlah_diterima = $qty;
+                $detail->status = 'diterima';
+                $detail->save();
+
+                if ($qty <= 0) {
+                    continue; // tidak ada yang datang: stok tidak berubah
+                }
+
+                $material = RawMaterial::lockForUpdate()->findOrFail($detail->id_bahan);
+                $material->stok_saat_ini = round((float) $material->stok_saat_ini + $qty, 3);
+                $material->save();
+
+                StockLog::create([
+                    'id_bahan'   => $material->id_bahan,
+                    'id_restock' => $restock->id_restock,
+                    'id_pesanan' => null,
+                    'tipe'       => 'masuk',
+                    'jumlah'     => $qty,
+                    'waktu'      => $now,
+                ]);
+            }
+
+            $restock->forceFill(['status' => 'diterima', 'tanggal_diterima' => $now])->save();
+
+            return $restock;
+        });
     }
 
     /**
