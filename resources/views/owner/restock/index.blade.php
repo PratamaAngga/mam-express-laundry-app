@@ -201,6 +201,15 @@
                                 </span>
                                 <span class="font-semibold">{{ $rupiah($d->subtotal) }}</span>
                             </div>
+                            @if ($selected->status === 'diterima')
+                                @php $got = (float) ($d->jumlah_diterima ?? $d->jumlah); @endphp
+                                <p class="text-xs mt-1 {{ $got < (float) $d->jumlah ? 'text-amber-700' : 'text-teal-700' }}">
+                                    Received: {{ \App\Models\RawMaterial::formatNumber($got) }} {{ $d->material->satuan }}
+                                    @if ($got < (float) $d->jumlah)
+                                        (short by {{ \App\Models\RawMaterial::formatNumber((float) $d->jumlah - $got) }})
+                                    @endif
+                                </p>
+                            @endif
                         </div>
                     @endforeach
                 </div>
@@ -224,6 +233,42 @@
                         <p class="text-sm {{ $titleColor }}">{{ $text }}</p>
                     </div>
                 </div>
+
+                @if ($selected->status === 'dikirim')
+                    {{-- Barang sudah dikirim supplier: owner memasukkan jumlah yang benar-benar datang --}}
+                    <form method="POST" action="{{ route('owner.restock.receive', ['code' => $selected->kode_restock]) }}"
+                        class="mt-5 border border-gray-200 rounded-xl p-5"
+                        onsubmit="return confirm('Confirm these received quantities? The stock will be updated.')">
+                        @csrf
+                        <h3 class="font-semibold mb-1">Confirm items received</h3>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Enter the quantity that actually arrived for each material. The stock increases by these amounts,
+                            and you cannot enter more than what was ordered.
+                        </p>
+                        @if (session('error'))
+                            <p class="text-sm text-red-600 mb-3">{{ session('error') }}</p>
+                        @endif
+                        @foreach ($selected->details as $d)
+                            <div class="flex items-center justify-between gap-4 mb-3">
+                                <label for="received-{{ $d->id_detail }}" class="text-sm">
+                                    <span class="font-semibold">{{ $d->material->nama_bahan }}</span><br>
+                                    <span class="text-gray-500">Ordered: {{ \App\Models\RawMaterial::formatNumber($d->jumlah) }} {{ $d->material->satuan }}</span>
+                                </label>
+                                <input type="number" step="0.001" min="0" max="{{ (float) $d->jumlah }}" required
+                                    id="received-{{ $d->id_detail }}" name="received[{{ $d->id_detail }}]"
+                                    value="{{ old('received.' . $d->id_detail, (float) $d->jumlah) }}"
+                                    class="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm text-right">
+                            </div>
+                            @error('received.' . $d->id_detail)
+                                <p class="text-xs text-red-600 -mt-2 mb-3">{{ $message }}</p>
+                            @enderror
+                        @endforeach
+                        <button type="submit"
+                            class="mt-2 bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold rounded-lg px-5 py-3">
+                            Confirm received
+                        </button>
+                    </form>
+                @endif
 
                 <h3 class="font-semibold mt-6 mb-4">The Booking Process</h3>
                 <ol class="space-y-4">

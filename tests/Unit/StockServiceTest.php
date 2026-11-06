@@ -35,4 +35,19 @@ class StockServiceTest extends TestCase
         // masih aman: tidak ada peringatan
         $this->assertFalse(StockService::crossedIntoLow(18, 17.95, 10));
     }
+
+    public function test_jumlah_diterima_boleh_nol_sampai_sebanyak_yang_dipesan(): void
+    {
+        $this->assertNull(StockService::receiptError(20, 20));   // sesuai pesanan
+        $this->assertNull(StockService::receiptError(20, 18));   // kurang
+        $this->assertNull(StockService::receiptError(20, 0));    // tidak ada yang datang
+        $this->assertNull(StockService::receiptError(20, 0.001)); // batas bawah
+    }
+
+    public function test_jumlah_diterima_di_luar_batas_ditolak(): void
+    {
+        $this->assertStringContainsString('more than', StockService::receiptError(20, 21));
+        $this->assertStringContainsString('more than', StockService::receiptError(20, 20.001));
+        $this->assertStringContainsString('negative', StockService::receiptError(20, -1));
+    }
 }

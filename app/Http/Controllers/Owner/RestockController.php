@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Owner;
 
+use App\Exceptions\InvalidStatusTransition;
 use App\Http\Controllers\Controller;
 use App\Models\RawMaterial;
 use App\Models\RestockDetail;
 use App\Models\RestockOrder;
 use App\Models\Supplier;
+use App\Services\StockService;
 use App\Services\WhatsApp\WhatsAppService;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -126,5 +129,29 @@ class RestockController extends Controller
         return redirect()
             ->route('owner.restock.index', ['order' => $order->kode_restock])
             ->with('status', 'Restock request ' . $order->kode_restock . ' has been submitted to the supplier.');
+    }
+
+    // Konfirmasi barang diterima: stok bertambah sesuai jumlah yang benar-benar datang (FR-16)
+    public function receive(Request $request, string $code, StockService $stock)
+    {
+        $restock = RestockOrder::where('kode_restock', strtoupper($code))->firstOrFail();
+
+        $data = $request->validate([
+            'received' => ['required', 'array'],
+            'received.*' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        try {
+            $stock->receiveRestock($restock->id_restock, $data['received']);
+        } catch (InvalidStatusTransition | InvalidArgumentException $e) {
+            return redirect()
+                ->route('owner.restock.index', ['order' => $restock->kode_restock])
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('owner.restock.index', ['order' => $restock->kode_restock])
+            ->with('status', "Restock {$restock->kode_restock} received and the stock has been updated.");
     }
 }

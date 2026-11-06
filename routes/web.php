@@ -56,6 +56,7 @@ Route::middleware(['auth', 'role:owner_admin'])->prefix('owner')->name('owner.')
     Route::get('/restock', [RestockController::class, 'index'])->name('restock.index');
     Route::get('/restock/create', [RestockController::class, 'create'])->name('restock.create');
     Route::post('/restock', [RestockController::class, 'store'])->name('restock.store');
+    Route::post('/restock/{code}/receive', [RestockController::class, 'receive'])->where('code', '[A-Za-z0-9-]+')->name('restock.receive');
 
     // Supplier management
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
