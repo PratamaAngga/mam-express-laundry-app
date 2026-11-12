@@ -124,6 +124,8 @@ Route::middleware(['auth', 'role:supplier'])->prefix('supplier')->name('supplier
     // Kelola produk (harga satuan diatur supplier)
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::patch('/products/{material}', [ProductController::class, 'update'])->whereNumber('material')->name('products.update');
+    Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+    Route::delete('/products/{material}', [ProductController::class, 'destroy'])->whereNumber('material')->name('products.destroy');
 
     // Shipments
     Route::get('/shipments', [ShipmentController::class, 'index'])->name('shipments.index');
