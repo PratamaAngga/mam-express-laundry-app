@@ -50,4 +50,20 @@ class StockServiceTest extends TestCase
         $this->assertStringContainsString('more than', StockService::receiptError(20, 20.001));
         $this->assertStringContainsString('negative', StockService::receiptError(20, -1));
     }
+
+    public function test_laju_pemakaian_cairan_diketik_dalam_ml_dan_disimpan_dalam_liter(): void
+    {
+        $this->assertSame('ml', StockService::usageUnit('liters')['label']);
+        $this->assertSame(0.01, StockService::toStoredRate(10, 'liters'));   // deterjen 10 ml/kg
+        $this->assertSame(0.005, StockService::toStoredRate(5, 'liters'));   // pewangi 5 ml/kg
+        $this->assertSame(10.0, StockService::toDisplayRate(0.01, 'liters'));
+        $this->assertSame(5.0, StockService::toDisplayRate(0.005, 'liters'));
+    }
+
+    public function test_satuan_selain_liter_dipakai_apa_adanya(): void
+    {
+        $this->assertSame('sheets', StockService::usageUnit('sheets')['label']);
+        $this->assertSame(1.0, StockService::toStoredRate(1, 'sheets'));
+        $this->assertSame(2.0, StockService::toDisplayRate(2, 'pcs'));
+    }
 }

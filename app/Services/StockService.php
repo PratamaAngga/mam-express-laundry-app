@@ -37,6 +37,32 @@ class StockService
         return ! self::isLow($before, $minimum) && self::isLow($after, $minimum);
     }
 
+    /**
+     * Satuan input laju pemakaian di halaman owner: bahan bersatuan liter diketik dalam ml per kg
+     * (lebih mudah dipahami), selebihnya memakai satuan bahan itu sendiri.
+     *
+     * @return array{label: string, factor: float} factor = pengali dari satuan input ke satuan bahan
+     */
+    public static function usageUnit(string $satuan): array
+    {
+        return match (strtolower(trim($satuan))) {
+            'l', 'liter', 'liters', 'litre', 'litres' => ['label' => 'ml', 'factor' => 0.001],
+            default => ['label' => $satuan, 'factor' => 1.0],
+        };
+    }
+
+    // Nilai yang diketik owner (mis. 10 ml/kg) -> disimpan dalam satuan bahan (0,010 liter/kg)
+    public static function toStoredRate(float $input, string $satuan): float
+    {
+        return round($input * self::usageUnit($satuan)['factor'], 4);
+    }
+
+    // Kebalikannya, untuk ditampilkan lagi di formulir
+    public static function toDisplayRate(float $stored, string $satuan): float
+    {
+        return round($stored / self::usageUnit($satuan)['factor'], 3);
+    }
+
     /** Alasan jumlah yang diterima tidak valid; null kalau boleh (0 sampai jumlah yang dipesan). */
     public static function receiptError(float $ordered, float $received): ?string
     {
