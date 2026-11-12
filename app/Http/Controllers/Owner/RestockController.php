@@ -74,6 +74,16 @@ class RestockController extends Controller
             'catatan'              => ['nullable', 'string', 'max:255'],
         ]);
 
+        // Supplier yang dinonaktifkan tidak boleh menerima restock baru. Formulir sudah menyembunyikannya;
+        // pemeriksaan ini pengaman di server kalau permintaan dikirim langsung.
+        $chosenSupplier = Supplier::with('user')->findOrFail($data['id_supplier']);
+
+        if (! $chosenSupplier->is_active) {
+            throw ValidationException::withMessages([
+                'id_supplier' => 'This supplier is not active, so it cannot receive new restock orders.',
+            ]);
+        }
+
         // Every material must belong to the chosen supplier and must already have a price set by that supplier.
         // Harga selalu diambil dari katalog supplier; harga kiriman dari form tidak dipakai.
         $materials = RawMaterial::where('id_supplier', $data['id_supplier'])->get()->keyBy('id_bahan');

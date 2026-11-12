@@ -44,4 +44,11 @@ class SecurityGuardsTest extends TestCase
             );
         }
     }
+
+    public function test_restock_baru_hanya_untuk_supplier_aktif(): void
+    {
+        $restock = $this->source('app/Http/Controllers/Owner/RestockController.php');
+
+        $this->assertStringContainsString('is_active', $restock);
+    }
 }
