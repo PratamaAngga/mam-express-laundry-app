@@ -136,8 +136,11 @@
                                 data-name="{{ $m->nama_bahan }}"
                                 data-unit="{{ $m->satuan }}"
                                 data-stock="{{ RawMaterial::formatNumber($m->stok_saat_ini) }}"
-                                data-minimum="{{ rtrim(rtrim(number_format($m->stok_minimum, 3, '.', ''), '0'), '.') }}">
-                                <i class="ti ti-edit"></i> Edit minimum
+                                data-minimum="{{ rtrim(rtrim(number_format($m->stok_minimum, 3, '.', ''), '0'), '.') }}"
+                                data-usage="{{ $m->pemakaian_per_kg !== null ? rtrim(rtrim(number_format(\App\Services\StockService::toDisplayRate((float) $m->pemakaian_per_kg, $m->satuan), 3, '.', ''), '0'), '.') : '' }}"
+                                data-usage-unit="{{ \App\Services\StockService::usageUnit($m->satuan)['label'] }}"
+                                data-trigger="{{ $m->id_tambahan_pemicu }}">
+                                <i class="ti ti-edit"></i> Edit settings
                             </button>
                         </td>
                     </tr>
@@ -191,17 +194,17 @@
         $editId = old('edit_material');
         $editing = $editId ? $materials->firstWhere('id_bahan', (int) $editId) : null;
     @endphp
-    <div id="minModal" class="{{ $errors->has('stok_minimum') ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center p-4"
+    <div id="minModal" class="{{ $errors->hasAny(['stok_minimum', 'usage_per_kg', 'id_tambahan_pemicu']) ? '' : 'hidden' }} fixed inset-0 z-50 flex items-center justify-center p-4"
         role="dialog" aria-modal="true" aria-labelledby="minModalTitle">
         <div class="absolute inset-0 bg-black/40" data-close-modal></div>
         <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
             <div class="flex items-start justify-between gap-4 mb-1">
-                <h2 id="minModalTitle" class="text-xl font-semibold text-[#12332d]">Edit minimum stock</h2>
+                <h2 id="minModalTitle" class="text-xl font-semibold text-[#12332d]">Edit stock settings</h2>
                 <button type="button" class="text-gray-500 hover:text-gray-800" aria-label="Close" data-close-modal>
                     <i class="ti ti-x text-xl"></i>
                 </button>
             </div>
-            <p class="text-sm text-gray-500 mb-5">A warning appears when stock falls to or below this level.</p>
+            <p class="text-sm text-gray-500 mb-5">A warning appears when stock falls to or below the minimum level.</p>
 
             <form id="minForm" method="POST" action="{{ $editing ? route('owner.inventory.minimum', ['material' => $editing->id_bahan]) : '#' }}" novalidate>
                 @csrf
@@ -224,11 +227,44 @@
                     <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
                 @enderror
 
+                <div class="mt-5 pt-5 border-t border-gray-100">
+                    <label for="usage_per_kg" class="block text-sm font-medium mb-1">Usage per kg of laundry</label>
+                    <p class="text-xs text-gray-500 mb-2">
+                        Stock is reduced by this amount per kg when an order starts processing.
+                        Leave empty (or 0) for materials that are not deducted automatically.
+                    </p>
+                    <div class="relative">
+                        <input type="number" id="usage_per_kg" name="usage_per_kg" step="any" min="0" inputmode="decimal"
+                            value="{{ old('usage_per_kg') }}"
+                            class="w-full border border-gray-200 rounded-lg px-4 py-3 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 @error('usage_per_kg') border-red-500 @enderror">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500">
+                            <span class="usage-unit">{{ $editing ? \App\Services\StockService::usageUnit($editing->satuan)['label'] : '' }}</span> / kg
+                        </span>
+                    </div>
+                    @error('usage_per_kg')
+                        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                    @enderror
+
+                    <label for="id_tambahan_pemicu" class="block text-sm font-medium mt-4 mb-2">Applies to</label>
+                    <select id="id_tambahan_pemicu" name="id_tambahan_pemicu"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600 @error('id_tambahan_pemicu') border-red-500 @enderror">
+                        <option value="">Every order</option>
+                        @foreach ($addons as $addon)
+                            <option value="{{ $addon->id_tambahan }}" @selected((string) old('id_tambahan_pemicu') === (string) $addon->id_tambahan)>
+                                Only orders with "{{ $addon->nama_tambahan }}"
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('id_tambahan_pemicu')
+                        <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <div class="flex items-center justify-end gap-3 mt-6">
                     <button type="button" data-close-modal
                         class="border border-gray-200 rounded-lg px-5 py-3 text-sm font-semibold hover:bg-gray-50">Cancel</button>
                     <button type="submit"
-                        class="bg-teal-700 hover:bg-teal-800 text-white rounded-lg px-5 py-3 text-sm font-semibold">Save minimum</button>
+                        class="bg-teal-700 hover:bg-teal-800 text-white rounded-lg px-5 py-3 text-sm font-semibold">Save settings</button>
                 </div>
             </form>
         </div>
@@ -268,6 +304,9 @@
             document.getElementById('minStock').textContent = btn.dataset.stock;
             modal.querySelectorAll('.min-unit').forEach(el => el.textContent = btn.dataset.unit);
             minInput.value = btn.dataset.minimum;
+            document.getElementById('usage_per_kg').value = btn.dataset.usage;
+            document.getElementById('id_tambahan_pemicu').value = btn.dataset.trigger;
+            modal.querySelectorAll('.usage-unit').forEach(el => el.textContent = btn.dataset.usageUnit);
             modal.classList.remove('hidden');
             minInput.focus();
             minInput.select();
