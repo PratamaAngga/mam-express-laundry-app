@@ -13,8 +13,9 @@ class RoleMiddleware
     {
         $user = $request->user();
 
+        // RoleMiddleware: pembatas akses per role dan pemutus sesi akun nonaktif
         if (! $user || ! in_array($user->role, $roles, true)) {
-            abort(403, 'Anda tidak memiliki hak akses ke halaman ini.');
+            abort(403, 'You do not have access to this page.');
         }
 
         // Akun yang dinonaktifkan owner langsung dikeluarkan, tidak menunggu sesinya habis
@@ -25,7 +26,7 @@ class RoleMiddleware
 
             return redirect()
                 ->route('login')
-                ->withErrors(['login' => 'Akun Anda sudah dinonaktifkan. Hubungi administrator.']);
+                ->withErrors(['login' => 'Your account has been deactivated. Please contact the administrator.']);
         }
 
         return $next($request);
