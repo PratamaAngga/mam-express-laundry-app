@@ -414,10 +414,6 @@ input[readonly] {
 }
 
 @media (max-width: 720px) {
-    .sidebar {
-        display: none;
-    }
-
     .options {
         grid-template-columns: 1fr;
     }
@@ -1344,4 +1340,561 @@ button.logout:hover { color: var(--text, inherit); }
     margin-top: 2px;
     font-size: 12px;
     color: var(--muted);
+}
+
+/* ===== Responsif tambahan =====
+   Dibatasi "screen" supaya tidak mengubah layout cetak
+   (kertas 80 mm akan cocok dengan max-width dan merusak struk/label). */
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Tablet */
+@media screen and (max-width: 960px) {
+    .sidebar {
+        width: 208px;
+        padding: 16px 12px;
+    }
+
+    .topbar {
+        padding: 12px 20px;
+    }
+
+    .content {
+        padding: 20px;
+    }
+}
+
+/* HP */
+@media screen and (max-width: 720px) {
+
+    /* Sidebar berubah jadi header atas + menu geser horizontal */
+    .app {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        align-self: stretch;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 12px;
+        padding: 10px 16px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        overflow: visible;
+    }
+
+    .brand {
+        order: 1;
+        flex: 1;
+        font-size: 16px;
+    }
+
+    .sidebar-bottom {
+        order: 2;
+        margin-top: 0;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sidebar-bottom .user {
+        border-top: 0;
+        padding-top: 0;
+    }
+
+    .location,
+    .nav-title,
+    .help,
+    .user-info {
+        display: none;
+    }
+
+    .nav {
+        order: 3;
+        flex: 0 0 100%;
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav a {
+        flex-shrink: 0;
+        white-space: nowrap;
+        padding: 8px 12px;
+    }
+
+    /* Spasi & tipografi */
+    h1 {
+        font-size: 22px;
+    }
+
+    .topbar {
+        padding: 10px 16px;
+        gap: 12px;
+    }
+
+    .topbar-right {
+        gap: 10px;
+    }
+
+    .content {
+        padding: 16px;
+    }
+
+    .card,
+    .side-panel {
+        padding: 16px;
+    }
+
+    .grid,
+    .cust-layout,
+    .receipt-grid {
+        gap: 16px;
+    }
+
+    .page-head {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .status-ok {
+        padding-top: 0;
+    }
+
+    /* Input: 16px supaya iOS tidak zoom saat fokus */
+    input[type="text"],
+    input[type="tel"],
+    .search input[type="search"],
+    select {
+        font-size: 16px;
+    }
+
+    .total strong {
+        font-size: 28px;
+    }
+
+    /* Toolbar & daftar */
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search {
+        max-width: none;
+    }
+
+    .toolbar-right {
+        flex-wrap: wrap;
+    }
+
+    .toolbar-right > * {
+        flex: 1 1 auto;
+    }
+
+    .select-btn {
+        width: 100%;
+    }
+
+    .list-top {
+        flex-wrap: wrap;
+    }
+
+    .table-foot {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .pager {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .stat {
+        padding: 14px 16px;
+    }
+
+    /* Halaman sukses */
+    .banner {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .banner-check {
+        width: 44px;
+        height: 44px;
+    }
+
+    .banner-text {
+        min-width: 0;
+    }
+
+    .order-code {
+        font-size: 22px;
+        word-break: break-all;
+    }
+
+    .actions {
+        gap: 10px;
+    }
+
+    .actions .btn,
+    .actions .btn-auto,
+    .actions .btn-outline {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+
+    .label-body {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .paper {
+        padding: 16px;
+    }
+
+    .select-row {
+        gap: 10px;
+    }
+
+    .select-wide {
+        max-width: none;
+    }
+
+    .wa-head {
+        flex-wrap: wrap;
+    }
+}
+
+/* HP kecil */
+@media screen and (max-width: 480px) {
+    .stats,
+    .stats-4,
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kv {
+        flex-wrap: wrap;
+        gap: 4px 12px;
+    }
+
+    .qr {
+        width: 88px;
+        height: 88px;
+    }
+
+    .customer-name {
+        font-size: 16px;
+    }
+}
+
+/* ===== Penyederhanaan tampilan HP: muat di layar, mirip versi web ===== */
+@media screen and (max-width: 720px) {
+
+    /* Menu jadi tab sejajar rata (ikon di atas, teks di bawah), tanpa geser */
+    .nav {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        gap: 4px;
+        overflow-x: visible;
+    }
+
+    .nav a {
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        font-size: 11px;
+        text-align: center;
+        white-space: normal;
+        flex-shrink: 1;
+    }
+
+    /* Pencarian satu baris penuh, jumlah customer di bawahnya */
+    .list-top {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .list-top .search,
+    .toolbar .search {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    /* Tabel customer muat di layar tanpa scroll samping */
+    .cust-list .table {
+        min-width: 0;
+        table-layout: auto;
+    }
+
+    .table th,
+    .table td {
+        padding: 12px 10px;
+        font-size: 12px;
+    }
+
+    .table th {
+        font-size: 11px;
+    }
+
+    .table .code {
+        font-size: 11px;
+    }
+}
+
+/* ===== Sidebar jadi drawer di HP (tombol ☰), aktif bila tombol .menu-btn ada ===== */
+.menu-btn {
+    display: none;
+}
+
+@media screen and (max-width: 720px) {
+    .app.drawer-ready .menu-btn {
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        margin-right: 8px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .app.drawer-ready .menu-btn:hover {
+        background: var(--bg);
+    }
+
+    .app.drawer-ready .topbar {
+        justify-content: flex-start;
+    }
+
+    .app.drawer-ready .topbar-right {
+        margin-left: auto;
+    }
+
+    .app.drawer-ready .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        width: 260px;
+        max-width: 85vw;
+        height: 100vh;
+        height: 100dvh;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        gap: 14px;
+        padding: 20px 16px;
+        border-right: 1px solid var(--line);
+        border-bottom: 0;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform .25s ease, visibility .25s;
+    }
+
+    .app.drawer-ready.sidebar-open .sidebar {
+        transform: none;
+        visibility: visible;
+        box-shadow: 0 0 40px rgba(0, 0, 0, .2);
+    }
+
+    .app.drawer-ready .brand {
+        flex: none;
+        font-size: 18px;
+    }
+
+    .app.drawer-ready .location {
+        display: flex;
+    }
+
+    .app.drawer-ready .nav-title {
+        display: block;
+    }
+
+    .app.drawer-ready .help {
+        display: flex;
+    }
+
+    .app.drawer-ready .user-info {
+        display: block;
+    }
+
+    .app.drawer-ready .nav {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        gap: 4px;
+        overflow: visible;
+    }
+
+    .app.drawer-ready .nav a {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        text-align: left;
+    }
+
+    .app.drawer-ready .sidebar-bottom {
+        margin-top: auto;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 14px;
+    }
+
+    .app.drawer-ready .sidebar-bottom .user {
+        border-top: 1px solid var(--line);
+        padding-top: 14px;
+    }
+
+    .sidebar-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: rgba(18, 51, 43, .45);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .2s;
+    }
+
+    .app.drawer-ready.sidebar-open .sidebar-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+/* Drawer: pakai urutan asli HTML (brand, lokasi, menu, profil di bawah) */
+@media screen and (max-width: 720px) {
+    .app.drawer-ready .brand,
+    .app.drawer-ready .nav,
+    .app.drawer-ready .sidebar-bottom {
+        order: 0;
+    }
+}
+
+/* ===== Tombol logout & dialog konfirmasi (komponen <x-logout-button>) =====
+   Komponen ini memakai kelas Tailwind (admin); di kasir digayakan lewat CSS biasa. */
+.user button[title="Log out"] {
+    display: grid;
+    place-items: center;
+    padding: 6px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.user button[title="Log out"]:hover {
+    background: var(--bg);
+    color: var(--ink);
+}
+
+#logout-dialog {
+    width: 92%;
+    max-width: 384px;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+}
+
+#logout-dialog::backdrop {
+    background: rgba(0, 0, 0, .4);
+}
+
+#logout-dialog form {
+    padding: 24px;
+}
+
+#logout-dialog form > div:first-of-type {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+#logout-dialog form > div:first-of-type > span {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: #fdecea;
+    color: var(--danger);
+    font-size: 20px;
+}
+
+#logout-dialog h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+#logout-dialog p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+#logout-dialog form > div:last-of-type {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+#logout-dialog button {
+    padding: 10px 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#logout-dialog button:hover {
+    background: var(--bg);
+}
+
+#logout-dialog button[type="submit"] {
+    border-color: #dc2626;
+    background: #dc2626;
+    color: #fff;
+}
+
+#logout-dialog button[type="submit"]:hover {
+    border-color: #b91c1c;
+    background: #b91c1c;
 }
