@@ -52,21 +52,30 @@
                     <span class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama, 0, 1)) }}</span>
                     <span class="user-info"><strong>{{ auth()->user()->nama }}</strong><br><span
                             class="muted small">Cashier</span></span>
-                    <x-logout-button />
+                    <x-logout-button>
+                        <x-icon name="log-out" :size="18" />
+                    </x-logout-button>
                 </div>
             </div>
         </aside>
 
         <div class="main">
             <header class="topbar">
+                {{-- Tombol buka sidebar (hanya tampil di HP) --}}
+                <button type="button" class="menu-btn" aria-label="Buka menu" aria-expanded="false">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+
                 <div class="breadcrumb">
                     <span class="muted">Cashier</span> <span class="muted">&rsaquo;</span>
                     <strong>@yield('breadcrumb', 'New Order')</strong>
                 </div>
                 <div class="topbar-right">
                     <span class="muted small">{{ now()->format('l, F j, Y') }}</span>
-                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell"
-                            :size="16" /></a>
+                    <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell" :size="16" /></a>
                 </div>
             </header>
 
@@ -76,6 +85,7 @@
         </div>
     </div>
 
+    <script src="{{ asset('js/cashier-menu.js') }}?v={{ filemtime(public_path('js/cashier-menu.js')) }}"></script>
     @stack('scripts')
 </body>
 
