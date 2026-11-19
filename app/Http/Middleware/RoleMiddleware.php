@@ -13,6 +13,7 @@ class RoleMiddleware
     {
         $user = $request->user();
 
+        // RoleMiddleware: pembatas akses per role dan pemutus sesi akun nonaktif
         if (! $user || ! in_array($user->role, $roles, true)) {
             abort(403, 'You do not have access to this page.');
         }
