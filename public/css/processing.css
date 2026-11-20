@@ -29,7 +29,7 @@ a { color: inherit; text-decoration: none; }
 .icon { flex-shrink: 0; }
 [hidden] { display: none !important; }
 
-.app { display: flex; min-height: 100vh; }
+.app { display: flex; min-height: 100vh; min-height: 100dvh; }
 
 /* ===== Sidebar ===== */
 .sidebar {
@@ -41,6 +41,12 @@ a { color: inherit; text-decoration: none; }
     padding: 20px 16px;
     background: var(--card);
     border-right: 1px solid var(--line);
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
 }
 
 .brand { display: flex; align-items: center; gap: 10px; }
@@ -91,9 +97,11 @@ a { color: inherit; text-decoration: none; }
 .main { flex: 1; min-width: 0; }
 
 .topbar {
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
     padding: 14px 28px; background: var(--card); border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 30;
 }
+.breadcrumb { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar-right { display: flex; align-items: center; gap: 18px; }
 .online { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ok); }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); display: inline-block; }
@@ -153,18 +161,6 @@ a { color: inherit; text-decoration: none; }
 .hero-card .info-box + .btn-primary,
 .hero-card .info-box + .btn-outline,
 .hero-card .info-box + form { margin-top: 20px; }
-
-/* ===== Responsif ===== */
-@media (max-width: 900px) {
-    .sidebar { display: none; }
-    .topbar { padding: 12px 16px; }
-    .topbar-right .online { display: none; }
-}
-@media (max-width: 560px) {
-    .content { padding: 16px; }
-    .hero-card { padding: 22px; margin-top: 8px; }
-    .page-head { flex-direction: column; }
-}
 
 /* ===== Work session ===== */
 .btn-sm {
@@ -376,11 +372,6 @@ a { color: inherit; text-decoration: none; }
     color: var(--muted);
 }
 
-@media (max-width: 560px) {
-    .stepper { font-size: 11px; }
-    .ws-confirm-title { font-size: 20px; }
-}
-
 /* ===== Scan lewat kamera ===== */
 .ws-actions {
     margin-top: 14px;
@@ -441,4 +432,151 @@ a { color: inherit; text-decoration: none; }
 
 .cam-stop:hover {
     background: rgba(0, 0, 0, .65);
+}
+
+/* ===== Tombol logout & dialog konfirmasi (komponen <x-logout-button>) =====
+   Komponen ini memakai kelas Tailwind (halaman Owner); di Processing digayakan lewat CSS biasa. */
+.user button[title="Log out"] {
+    display: grid; place-items: center;
+    padding: 8px; border: 0; border-radius: 8px;
+    background: none; color: var(--muted);
+    font-size: 20px; line-height: 1; cursor: pointer;
+}
+.user button[title="Log out"]:hover { background: var(--bg); color: var(--ink); }
+
+#logout-dialog {
+    width: 92%; max-width: 384px; padding: 0; border: 0; border-radius: 16px;
+    background: #fff; color: var(--ink); font: inherit;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, .25);
+}
+#logout-dialog::backdrop { background: rgba(0, 0, 0, .4); }
+#logout-dialog form { padding: 24px; }
+#logout-dialog form > div:first-of-type { display: flex; align-items: flex-start; gap: 16px; }
+#logout-dialog form > div:first-of-type > span {
+    width: 44px; height: 44px; flex-shrink: 0;
+    display: grid; place-items: center; border-radius: 50%;
+    background: #fdecea; color: #dc2626; font-size: 20px;
+}
+#logout-dialog h2 { margin: 0; font-size: 18px; font-weight: 600; }
+#logout-dialog p { margin: 4px 0 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+#logout-dialog form > div:last-of-type { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
+#logout-dialog button {
+    padding: 11px 20px; border: 1px solid var(--line); border-radius: 8px;
+    background: #fff; color: var(--ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+#logout-dialog button:hover { background: var(--bg); }
+#logout-dialog button[type="submit"] { border-color: #dc2626; background: #dc2626; color: #fff; }
+#logout-dialog button[type="submit"]:hover { border-color: #b91c1c; background: #b91c1c; }
+
+/* ===== Responsif: elemen khusus layar kecil (disembunyikan di desktop) ===== */
+.menu-btn { display: none; }
+.sidebar-backdrop { display: none; }
+.shift-pill { display: none; }
+body.no-scroll { overflow: hidden; }
+
+.shift-pill {
+    align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 999px;
+    background: var(--bg); color: var(--muted);
+    font-size: 12px; font-weight: 500; white-space: nowrap;
+}
+.shift-pill .live-dot { background: #a9bcc2; }
+.shift-pill.on { background: #e6f5ec; color: var(--ok); }
+.shift-pill.on .live-dot { background: var(--ok); }
+
+.content { padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px)); }
+
+/* ===== Tablet & HP (< 1024px): sidebar jadi drawer geser, sama seperti Owner ===== */
+@media (max-width: 1023px) {
+    .menu-btn {
+        display: grid; place-items: center;
+        width: 40px; height: 40px; margin-left: -8px;
+        border: 0; border-radius: 8px;
+        background: transparent; color: var(--ink);
+        cursor: pointer; flex-shrink: 0;
+    }
+    .menu-btn:hover { background: var(--bg); }
+
+    .topbar {
+        justify-content: flex-start;
+        padding: 10px 16px;
+        padding-top: calc(10px + env(safe-area-inset-top, 0px));
+        min-height: 56px;
+    }
+    .topbar-right { margin-left: auto; gap: 12px; }
+    .topbar-right .online { display: none; }
+    .shift-pill { display: inline-flex; }
+
+    .sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 50;
+        width: 280px; max-width: 85vw;
+        padding-top: calc(20px + env(safe-area-inset-top, 0px));
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-100%);
+        visibility: hidden;
+        transition: transform .25s ease, visibility .25s;
+    }
+    .app.sidebar-open .sidebar {
+        transform: none;
+        visibility: visible;
+        box-shadow: 0 0 40px rgba(0, 0, 0, .2);
+    }
+
+    .sidebar-backdrop {
+        display: block;
+        position: fixed; inset: 0; z-index: 40;
+        background: rgba(16, 48, 58, .45);
+        opacity: 0; pointer-events: none;
+        transition: opacity .2s;
+    }
+    .app.sidebar-open .sidebar-backdrop { opacity: 1; pointer-events: auto; }
+
+    .nav a { padding: 13px 12px; }
+    .content { padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ===== Tablet kecil & HP besar (< 640px) ===== */
+@media (max-width: 639px) {
+    .topbar-date { display: none; }
+    .crumb-root { display: none; }
+    .breadcrumb strong { font-size: 15px; }
+}
+
+/* ===== HP (< 560px) ===== */
+@media (max-width: 559px) {
+    h1 { font-size: 22px; }
+    h2 { font-size: 20px; }
+    .content { padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+
+    .page-head { flex-direction: column; gap: 12px; margin-bottom: 18px; }
+    .page-head form { width: 100%; }
+    .page-head .btn-outline.btn-sm { width: 100%; }
+
+    .hero-card { padding: 20px; margin-top: 4px; }
+    .btn-primary { min-height: 52px; padding: 14px; }
+    .btn-outline { min-height: 48px; }
+    .btn-sm { min-height: 44px; }
+
+    .stepper { flex-wrap: wrap; justify-content: center; gap: 6px 14px; font-size: 11px; margin-bottom: 16px; }
+    .ws-title-row { gap: 12px; margin-bottom: 16px; }
+    .ws-title-row h2 { font-size: 18px; }
+    .ws-label-row { flex-wrap: wrap; gap: 4px 12px; }
+    .ws-confirm-title { font-size: 20px; margin-top: 20px; }
+    .ws-input input { padding: 16px 14px 16px 48px; }
+    .ws-input input[readonly] { font-size: 18px; }
+    .ws-camera { max-height: 60vh; }
+    .ws-actions .btn-outline { width: 100%; }
+}
+
+/* ===== HP kecil (< 360px) ===== */
+@media (max-width: 359px) {
+    .content { padding: 12px; }
+    .hero-card { padding: 16px; }
+    .shift-pill { padding: 4px 8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar, .sidebar-backdrop { transition: none; }
 }

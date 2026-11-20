@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>@yield('title', 'Processing - Mam Express')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
 <body>
     <div class="app">
 
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <a class="brand" href="{{ route('processing.home') }}">
                 <span class="brand-mark"><x-icon name="washing-machine" :size="20" /></span>
                 <span class="brand-text">
@@ -65,12 +65,26 @@
 
         <div class="main">
             <header class="topbar">
+                {{-- Tombol buka sidebar (hanya tampil di layar kecil, seperti di Owner) --}}
+                <button type="button" class="menu-btn" aria-label="Open menu" aria-controls="sidebar"
+                    aria-expanded="false">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" aria-hidden="true">
+                        <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+
                 <div class="breadcrumb">
-                    <span class="muted">Processing</span> <span class="muted">/</span>
+                    <span class="muted crumb-root">Processing /</span>
                     <strong>@yield('breadcrumb', 'Home')</strong>
                 </div>
                 <div class="topbar-right">
-                    <span class="muted small">{{ now()->format('l, j F Y') }}</span>
+                    {{-- Status shift ringkas: sidebar tersembunyi di HP, jadi status tetap terlihat di topbar --}}
+                    <span class="shift-pill {{ $shift['started'] ? 'on' : '' }}">
+                        <span class="live-dot"></span>
+                        {{ $shift['started'] ? 'On shift' : 'Off shift' }}
+                    </span>
+                    <span class="muted small topbar-date">{{ now()->format('l, j F Y') }}</span>
                     <span class="online"><span class="live-dot"></span> All systems online</span>
                     <a href="#" class="bell" aria-label="Notifications"><x-icon name="bell"
                             :size="16" /></a>
@@ -81,8 +95,10 @@
                 @yield('content')
             </main>
         </div>
+        <div class="sidebar-backdrop" aria-hidden="true"></div>
     </div>
 
+    <script src="{{ asset('js/processing-menu.js') }}?v={{ filemtime(public_path('js/processing-menu.js')) }}"></script>
     @stack('scripts')
 </body>
 
